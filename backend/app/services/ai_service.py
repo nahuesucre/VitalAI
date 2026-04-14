@@ -157,14 +157,21 @@ Rules:
         return response.content[0].text
 
     def _extract_json(self, text: str) -> dict:
-        """Extract JSON from LLM response, handling potential markdown wrapping."""
+        """Extract JSON from LLM response, handling markdown wrapping and preamble text."""
         text = text.strip()
-        if text.startswith("```json"):
-            text = text[7:]
-        elif text.startswith("```"):
-            text = text[3:]
+        # Remove markdown code fences
+        if "```json" in text:
+            text = text.split("```json", 1)[1]
+        elif "```" in text:
+            text = text.split("```", 1)[1]
         if text.endswith("```"):
             text = text[:-3]
+        if "```" in text:
+            text = text.split("```")[0]
+        # If still not starting with {, find the first {
+        text = text.strip()
+        if not text.startswith("{") and "{" in text:
+            text = text[text.index("{"):]
         return json.loads(text.strip())
 
 

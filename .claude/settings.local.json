@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pandoc --track-changes=all \"C:/Users/fedea/OneDrive/Varios/Hackathon/Info/Trial Flow Ai - Documento Maestro De Producto Y Build.docx\" -o /tmp/trial_flow.md)",
+      "Bash(python \"C:/Users/fedea/.claude/scripts/office/unpack.py\" \"C:/Users/fedea/OneDrive/Varios/Hackathon/Info/Trial Flow Ai - Documento Maestro De Producto Y Build.docx\" /tmp/trial_flow_unpacked/)",
+      "Read(//c/tmp/**)",
+      "Bash(python -c ':*)",
+      "Bash(python:*)",
+      "Bash(unzip -q \"/c/Users/fedea/OneDrive/Varios/Hackathon/Info/FCI_RELIEHF_borrador_demo.docx\" -d fci_extracted)",
+      "Bash(unzip -q \"/c/Users/fedea/OneDrive/Varios/Hackathon/Info/IB_RELIEHF_patirómero_borrador_demo.docx\" -d ib_extracted)",
+      "Bash(sed 's/<w:t>//g')",
+      "Bash(mkdir -p backend/app/core backend/app/api/v1 backend/app/models backend/app/schemas backend/app/services backend/app/db)",
+      "Bash(mkdir -p frontend)",
+      "Bash(mkdir -p supabase)",
+      "Bash(pip install:*)",
+      "Bash(where psql:*)",
+      "Bash(where python:*)",
+      "Bash(C:\\\\Users\\\\fedea\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe:*)",
+      "Bash(\"C:\\\\Users\\\\fedea\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" -m pip install fastapi uvicorn pydantic pydantic-settings python-jose passlib bcrypt python-multipart sqlalchemy asyncpg anthropic PyPDF2 pdfplumber python-dotenv greenlet httpx)",
+      "Bash(\"C:\\\\Users\\\\fedea\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" -m pip install pdfplumber python-dotenv)",
+      "Bash(\"C:\\\\Program Files\\\\PostgreSQL\\\\17\\\\bin\\\\psql.exe\" --version)",
+      "Bash(\"C:\\\\Program Files\\\\PostgreSQL\\\\16\\\\bin\\\\psql.exe\" --version)",
+      "Bash(C:/Program Files/PostgreSQL/18/bin/psql.exe:*)",
+      "Bash(PGPASSWORD=Hackathon C:/Program Files/PostgreSQL/18/bin/psql.exe:*)",
+      "Bash(\"C:\\\\Users\\\\fedea\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" -m uvicorn app.main:app --host 0.0.0.0 --port 8000)",
+      "Bash(curl -s http://localhost:8000/health)",
+      "Bash(\"C:\\\\Users\\\\fedea\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" -m uvicorn app.main:app --port 8000)",
+      "Bash(curl:*)",
+      "Bash(npx create-next-app@latest frontend --typescript --tailwind --app --eslint --src-dir --no-turbopack --import-alias \"@/*\")",
+      "Bash(npm run:*)",
+      "Bash(start chrome:*)",
+      "Bash(start http://localhost:3000)",
+      "Bash(taskkill //F //IM python.exe)",
+      "Bash(\"C:\\\\Users\\\\fedea\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" -m uvicorn app.main:app --port 8000 --reload)",
+      "Bash(wmic process:*)",
+      "Bash('C:\\\\Users\\\\fedea\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe' -c ':*)"
+    ]
+  }
+}

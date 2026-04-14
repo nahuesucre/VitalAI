@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { isAuthenticated, getMe } from "@/lib/auth";
 import Sidebar from "./Sidebar";
@@ -15,11 +15,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       router.push("/login");
       return;
     }
+    let cancelled = false;
     getMe()
-      .then(setUser)
-      .catch(() => router.push("/login"))
-      .finally(() => setLoading(false));
-  }, [router]);
+      .then((u) => { if (!cancelled) setUser(u); })
+      .catch(() => { if (!cancelled) router.push("/login"); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) {
     return (

@@ -1,5 +1,6 @@
-"""Document parsing pipeline: PDF → text → Claude → DB"""
+"""Document parsing pipeline: PDF → text → section search → Claude → DB"""
 import os
+import re
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -19,7 +20,6 @@ def extract_text_from_pdf(file_path: str) -> str:
                     text_parts.append(page_text)
         return "\n\n".join(text_parts)
     except Exception:
-        # Fallback to PyPDF2
         from PyPDF2 import PdfReader
         reader = PdfReader(file_path)
         text_parts = []
@@ -51,15 +51,87 @@ def extract_text_from_docx(file_path: str) -> str:
     return "\n".join(paragraphs)
 
 
+def extract_sections(full_text: str) -> dict[str, str]:
+    """Search for key protocol sections by title patterns and extract chunks."""
+    sections = {}
+    text_lower = full_text.lower()
+
+    # Define section patterns to search for (keyword -> chars to grab after match)
+    patterns = [
+        # Visit schedule / procedures
+        ("schedule_of_assessments", [
+            r"schedule\s+of\s+assess", r"schedule\s+of\s+events",
+            r"schedule\s+of\s+procedures", r"study\s+schedule",
+            r"visit\s+schedule", r"table\s+of\s+visits",
+            r"cronograma\s+de\s+visitas", r"calendario\s+de\s+visitas",
+        ]),
+        # Inclusion criteria
+        ("inclusion_criteria", [
+            r"inclusion\s+criteria", r"eligibility\s+criteria",
+            r"criterios?\s+de\s+inclusi[oó]n", r"criterios?\s+de\s+elegibilidad",
+        ]),
+        # Exclusion criteria
+        ("exclusion_criteria", [
+            r"exclusion\s+criteria", r"criterios?\s+de\s+exclusi[oó]n",
+        ]),
+        # Study procedures / visits detail
+        ("study_procedures", [
+            r"study\s+procedures", r"description\s+of\s+study\s+visits",
+            r"visit\s+procedures", r"study\s+visits",
+            r"procedimientos\s+del\s+estudio", r"descripci[oó]n\s+de\s+visitas",
+        ]),
+        # Screening
+        ("screening", [
+            r"screening\s+visit", r"screening\s+period",
+            r"visita\s+de\s+selecci[oó]n", r"per[ií]odo\s+de\s+screening",
+        ]),
+        # Study design
+        ("study_design", [
+            r"study\s+design", r"dise[nñ]o\s+del\s+estudio",
+            r"overall\s+design", r"study\s+overview",
+        ]),
+    ]
+
+    for section_name, regexes in patterns:
+        for regex in regexes:
+            match = re.search(regex, text_lower)
+            if match:
+                # Grab from 200 chars before the match to 8000 chars after
+                start = max(0, match.start() - 200)
+                end = min(len(full_text), match.start() + 8000)
+                sections[section_name] = full_text[start:end]
+                break
+
+    return sections
+
+
+def build_focused_prompt(sections: dict[str, str], full_text: str) -> str:
+    """Build a focused text for Claude from extracted sections."""
+    parts = []
+
+    if sections:
+        for name, content in sections.items():
+            header = name.replace("_", " ").upper()
+            parts.append(f"=== {header} ===\n{content}")
+        focused = "\n\n".join(parts)
+    else:
+        # Fallback: use first 50K chars if no sections found
+        focused = full_text[:50000]
+
+    # Cap at 80K to be safe with tokens
+    if len(focused) > 80000:
+        focused = focused[:80000]
+
+    return focused
+
+
 async def parse_document(doc_id: UUID, db: AsyncSession) -> dict:
     """Full parsing pipeline for a study document."""
-    # Get document
     result = await db.execute(select(StudyDocument).where(StudyDocument.id == doc_id))
     doc = result.scalar_one_or_none()
     if not doc:
         raise ValueError(f"Document {doc_id} not found")
 
-    # Update status
     doc.processing_status = "processing"
     await db.flush()
 
@@ -73,19 +145,26 @@ async def parse_document(doc_id: UUID, db: AsyncSession) -> dict:
         else:
             raise ValueError(f"Unsupported file type: {file_path}")
 
-        # Save extracted text
+        # Save full extracted text
         doc.extracted_text = text
 
         # Parse with AI based on document type
         if doc.document_type == "protocol":
-            parsed = llm_service.parse_protocol(text)
+            # Smart section extraction instead of dumping everything
+            sections = extract_sections(text)
+            focused_text = build_focused_prompt(sections, text)
+            parsed = llm_service.parse_protocol(focused_text)
             await _save_protocol_extraction(parsed, doc.study_id, doc.id, db)
         elif doc.document_type == "icf":
-            parsed = llm_service.parse_icf(text)
+            parsing_text = text[:50000]
+            parsed = llm_service.parse_icf(parsing_text)
         elif doc.document_type == "ib":
-            parsed = llm_service.parse_ib(text)
+            parsing_text = text[:50000]
+            parsed = llm_service.parse_ib(parsing_text)
         else:
-            parsed = llm_service.parse_protocol(text)
+            sections = extract_sections(text)
+            focused_text = build_focused_prompt(sections, text)
+            parsed = llm_service.parse_protocol(focused_text)
             await _save_protocol_extraction(parsed, doc.study_id, doc.id, db)
 
         doc.processing_status = "completed"
@@ -100,7 +179,6 @@ async def parse_document(doc_id: UUID, db: AsyncSession) -> dict:
 
 async def _save_protocol_extraction(parsed: dict, study_id: UUID, doc_id: UUID, db: AsyncSession):
     """Save AI-extracted protocol data to DB."""
-    # Save visits and procedures
     for visit_data in parsed.get("visits", []):
         visit = StudyVisit(
             study_id=study_id,
@@ -118,12 +196,22 @@ async def _save_protocol_extraction(parsed: dict, study_id: UUID, doc_id: UUID, 
         await db.refresh(visit)
 
         for i, proc_data in enumerate(visit_data.get("procedures", [])):
+            if isinstance(proc_data, str):
+                proc_name = proc_data
+                proc_desc = None
+                proc_required = True
+                proc_critical = False
+            else:
+                proc_name = proc_data.get("procedure_name", str(proc_data))
+                proc_desc = proc_data.get("description")
+                proc_required = proc_data.get("is_required", True)
+                proc_critical = proc_data.get("is_critical", False)
             proc = StudyProcedure(
                 study_visit_id=visit.id,
-                procedure_name=proc_data.get("procedure_name", "Unknown Procedure"),
-                description=proc_data.get("description"),
-                is_required=proc_data.get("is_required", True),
-                is_critical=proc_data.get("is_critical", False),
+                procedure_name=proc_name,
+                description=proc_desc,
+                is_required=proc_required,
+                is_critical=proc_critical,
                 order_index=i,
             )
             db.add(proc)
@@ -131,25 +219,41 @@ async def _save_protocol_extraction(parsed: dict, study_id: UUID, doc_id: UUID, 
     # Save screening criteria as rules
     screening = parsed.get("screening_criteria", {})
     for criterion in screening.get("inclusion", []):
+        if isinstance(criterion, str):
+            title = criterion
+            desc = None
+            excerpt = None
+        else:
+            title = criterion.get("title", str(criterion))
+            desc = criterion.get("description")
+            excerpt = criterion.get("source_excerpt")
         rule = StudyRule(
             study_id=study_id,
             rule_type="inclusion",
-            title=criterion.get("title", ""),
-            description=criterion.get("description"),
+            title=title,
+            description=desc,
             source_document_id=doc_id,
-            source_excerpt=criterion.get("source_excerpt"),
+            source_excerpt=excerpt,
             is_confirmed=False,
         )
         db.add(rule)
 
     for criterion in screening.get("exclusion", []):
+        if isinstance(criterion, str):
+            title = criterion
+            desc = None
+            excerpt = None
+        else:
+            title = criterion.get("title", str(criterion))
+            desc = criterion.get("description")
+            excerpt = criterion.get("source_excerpt")
         rule = StudyRule(
             study_id=study_id,
             rule_type="exclusion",
-            title=criterion.get("title", ""),
-            description=criterion.get("description"),
+            title=title,
+            description=desc,
             source_document_id=doc_id,
-            source_excerpt=criterion.get("source_excerpt"),
+            source_excerpt=excerpt,
             is_confirmed=False,
         )
         db.add(rule)
