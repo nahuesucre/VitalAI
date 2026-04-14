@@ -9,6 +9,7 @@ env/
 # Environment
 .env
 .env.local
+.env.*.local
 
 # IDE
 .vscode/
@@ -39,6 +40,15 @@ Info/
 # Logs
 *.log
 npm-debug.log*
+
+# Notes
+notes/
+
+# Docker local overrides
+docker-compose.override.yml
+
+# DB init scripts with sensitive data
+db/init/*.sql
 
 # Coverage
 coverage/
