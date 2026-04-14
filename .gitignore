@@ -4,11 +4,11 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+env/
 
-# Environment variables
+# Environment
 .env
 .env.local
-.env.*.local
 
 # IDE
 .vscode/
@@ -21,16 +21,24 @@ venv/
 Thumbs.db
 
 # Build
+.next/
+out/
 dist/
 build/
-.next/
+*.egg-info/
+
+# Supabase
+supabase/.temp/
+
+# Uploaded files
+uploads/
+
+# Info docs (not part of the app)
+Info/
 
 # Logs
 *.log
 npm-debug.log*
-
-# Notes (internal project notes, not for GitHub)
-notes/
 
 # Coverage
 coverage/
