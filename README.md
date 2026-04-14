@@ -1,55 +1,52 @@
 # VitalAI
 
-**Transforming clinical trial documents into safe, guided, and measurable operations.**
+**Turning clinical trial protocols into guided, measurable operations — so no patient falls through the cracks.**
 
 > Built at the Anthropic Hackathon — Buenos Aires, April 2026
 
 ---
 
-## The Problem
+## Why this matters
 
-Clinical research is one of the most critical processes in healthcare — yet its daily operations remain alarmingly manual.
+Every year, thousands of clinical trials run across the world testing treatments that could save lives. Behind each trial, there are **coordinators and physicians** who must ensure that every patient is screened correctly, every visit happens on time, every procedure is completed, and every deviation is caught.
 
-Coordinators and investigators spend their days navigating **hundreds of pages of protocol PDFs**, manually interpreting complex rules, tracking visits on spreadsheets and paper checklists, and relying on memory and experience to catch deviations before they escalate.
+**They do all of this by reading 200-page PDF protocols and tracking everything manually.**
 
-The consequences are real:
+This is not a minor inefficiency. It is a systemic risk:
 
-- **Protocol deviations go undetected** until audits reveal them — sometimes too late.
-- **Screening errors** lead to patients being enrolled incorrectly or unnecessarily excluded.
-- **Visit procedures are missed** because no system actively tracks what was expected vs. what was done.
-- **Cognitive overload** on coordinators leads to burnout and human error in high-stakes environments.
-- **Zero operational metrics** — sites have no visibility into where their process fails most.
+- A coordinator misreads a protocol window and a **patient visit happens out of range** — the data point is invalidated.
+- A screening criterion is overlooked and an **ineligible patient is enrolled** — putting their safety at risk.
+- A critical lab test is forgotten during a visit and **nobody notices until the next audit**, weeks later.
+- Sites have **no way to measure** where their process breaks — they only find out when something goes wrong.
 
-In an industry where a single missed step can compromise patient safety, data integrity, or regulatory compliance, **the operational layer of clinical trials is still stuck in the PDF era.**
+Clinical research is one of the most regulated, high-stakes environments in healthcare. Yet its operational layer — the day-to-day execution of the study — **has almost no technological support**. Coordinators rely on memory, experience, and paper checklists to manage complexity that grows with every protocol amendment.
 
-There is no widely adopted tool that converts clinical study documents into a live, guided, auditable operational workflow. This gap is where VitalAI operates.
+The cost of these gaps is real: **delayed trials, compromised data integrity, regulatory findings, and ultimately, risk to the patients the study is trying to help.**
 
 ---
 
-## The Solution
+## What VitalAI does
 
-VitalAI is a **clinical operations platform powered by AI** that transforms study documents — protocol, informed consent form (ICF), and investigator's brochure (IB) — into an actionable operational layer.
+VitalAI closes this gap. It takes the study documents — protocol, informed consent form (ICF), and investigator's brochure (IB) — and **converts them into a live operational layer** that guides the team through every step.
 
-It is **not** a chatbot for PDFs. It is a structured operations platform where AI acts as an **operational copilot**: it extracts, proposes, alerts, and answers — but the human always confirms.
+It is **not a chatbot for PDFs**. It is a clinical operations platform where AI acts as an **operational copilot**: it reads the protocol, structures the workflow, tracks execution, detects problems, and answers questions — but **the human always decides**.
 
-### What it does
-
-| Capability | Description |
+| | |
 |---|---|
-| **Document Parsing** | AI reads the full protocol, extracts visits, procedures, time windows, and screening criteria using smart section detection |
-| **Guided Screening** | Dynamic checklists with inclusion/exclusion criteria directly from the protocol |
-| **Visit Execution** | Each visit shows expected procedures, tracks completion, flags missing items |
-| **Deviation Detection** | Automatic alerts for incomplete screening, missed critical procedures, out-of-window visits |
-| **Contextual Chat** | Ask questions about the protocol, a specific patient, or a visit — grounded in real data |
-| **Operational Metrics** | Dashboard with alerts by type, screening status, visit completion, frequent gaps |
+| **Protocol to Structure** | Upload a protocol PDF. AI extracts visits, procedures, time windows, and screening criteria — ready to review and confirm. |
+| **Guided Screening** | Each patient gets a dynamic checklist built from the actual inclusion/exclusion criteria in the protocol. No more guessing. |
+| **Visit Checklists** | Every visit shows exactly what needs to happen. The team marks tasks as done, and the system flags what's missing. |
+| **Automatic Alerts** | Incomplete screening, missed critical procedures, out-of-window visits — the system catches it before the monitor does. |
+| **AI Copilot** | Ask "What's missing to close this visit?" or "What does the protocol say about Visit 4?" — grounded in real data, not hallucinations. |
+| **Operational Metrics** | For the first time, sites can see where they fail most: which procedures get missed, which visits have gaps, which alerts repeat. |
 
-### Key Principles
+### How it works — the principles
 
 - **AI proposes, humans confirm** — the platform never makes clinical eligibility decisions
-- **Patient pseudonymization** from day one — no real identifiable data
-- **Full auditability** — every critical action is logged
-- **Reduce cognitive load**, don't add to it
-- **Modular AI layer** — designed to swap between cloud API and local LLM
+- **Pseudonymization from day one** — no real patient identifiers, ever
+- **Full auditability** — every critical action is logged and traceable
+- **Reduce cognitive load** — the system should make the coordinator's job easier, not harder
+- **Modular AI layer** — designed to swap between cloud API and local LLM for on-premise deployments
 
 ---
 
@@ -300,8 +297,8 @@ VitalAI/
 ## Team
 
 - Nahuel Martinez de Sucre
-- Federico
-- [Team member 3]
+- Federico Alscher
+- Ignacio Samoacachan
 
 ---
 
