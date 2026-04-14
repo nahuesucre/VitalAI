@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project: TrialFlow AI
+## Project: VitalAI
 
 A web platform for clinical study operations, targeting coordinators and physicians. It transforms study documents (protocol, ICF, IB — all PDFs) into an actionable operational layer: structured visits, dynamic checklists, patient screening, deviation detection, contextual chat, and operational metrics.
 

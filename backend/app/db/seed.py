@@ -20,23 +20,23 @@ async def seed():
             print("Roles created.")
 
         # Check if demo users exist
-        result = await db.execute(select(User).where(User.email == "admin@trialflow.ai"))
+        result = await db.execute(select(User).where(User.email == "admin@vitalai.ai"))
         if not result.scalar_one_or_none():
             users = [
                 User(
-                    email="admin@trialflow.ai",
+                    email="admin@vitalai.ai",
                     password_hash=hash_password("password123"),
-                    full_name="Admin TrialFlow",
+                    full_name="Admin VitalAI",
                     role_id=1,
                 ),
                 User(
-                    email="coordinator@trialflow.ai",
+                    email="coordinator@vitalai.ai",
                     password_hash=hash_password("password123"),
                     full_name="María Coordinadora",
                     role_id=2,
                 ),
                 User(
-                    email="doctor@trialflow.ai",
+                    email="doctor@vitalai.ai",
                     password_hash=hash_password("password123"),
                     full_name="Dr. Carlos Investigador",
                     role_id=3,

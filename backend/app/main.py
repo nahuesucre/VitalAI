@@ -24,7 +24,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="TrialFlow AI",
+    title="VitalAI",
     description="Clinical trial operations platform powered by AI",
     version="0.1.0",
     lifespan=lifespan,
@@ -52,7 +52,7 @@ app.include_router(chat.router, prefix="/api/v1")
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "service": "trialflow-ai"}
+    return {"status": "ok", "service": "vitalai"}
 
 
 @app.post("/api/v1/studies/{study_id}/documents/{doc_id}/parse")

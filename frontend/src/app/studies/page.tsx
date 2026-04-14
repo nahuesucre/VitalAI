@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import AppLayout from "@/components/layout/AppLayout";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import { useApp } from "@/contexts/AppContext";
 import { api } from "@/lib/api";
 import type { Study } from "@/types";
@@ -17,6 +18,7 @@ export default function StudiesPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ name: "", sponsor: "", phase: "III", study_type: "interventional_drug", description: "" });
   const [creating, setCreating] = useState(false);
+  const [deleteStudyId, setDeleteStudyId] = useState<string | null>(null);
   const router = useRouter();
   const { t } = useApp();
 
@@ -24,11 +26,16 @@ export default function StudiesPage() {
     api<Study[]>("/studies/").then(setStudies).catch(() => {});
   }, []);
 
-  async function handleDelete(studyId: string, e: React.MouseEvent) {
-    e.stopPropagation();
-    if (!confirm(t("studies.confirmDelete"))) return;
-    await api(`/studies/${studyId}`, { method: "DELETE" });
-    setStudies(prev => prev.filter(s => s.id !== studyId));
+  async function handleDelete() {
+    if (!deleteStudyId) return;
+    try { await api(`/studies/${deleteStudyId}`, { method: "DELETE" }); } catch {}
+    setDeleteStudyId(null);
+    // Small delay to let DB commit, then force reload
+    await new Promise(r => setTimeout(r, 300));
+    try {
+      const fresh = await api<Study[]>("/studies/");
+      setStudies([...fresh]);
+    } catch {}
   }
 
   async function handleCreate(e: React.FormEvent) {
@@ -50,6 +57,16 @@ export default function StudiesPage() {
 
   return (
     <AppLayout>
+      <ConfirmModal
+        open={!!deleteStudyId}
+        title={t("common.delete")}
+        message={t("studies.confirmDelete")}
+        confirmLabel={t("common.delete")}
+        cancelLabel={t("common.cancel")}
+        danger
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteStudyId(null)}
+      />
       <div className="max-w-5xl">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-gray-800">{t("studies.title")}</h2>
@@ -169,15 +186,13 @@ export default function StudiesPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${
-                    study.status === "active"
-                      ? "bg-sky-50 text-sky-600 border-sky-200"
-                      : "bg-gray-50 text-gray-500 border-gray-200"
-                  }`}>
-                    {study.status === "active" ? t("studies.activeRecruiting") : study.status === "draft" ? t("studies.draft") : study.status}
-                  </span>
+                  {study.status === "active" && (
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold border bg-sky-50 text-sky-600 border-sky-200">
+                      {t("studies.activeRecruiting")}
+                    </span>
+                  )}
                   <button
-                    onClick={(e) => handleDelete(study.id, e)}
+                    onClick={(e) => { e.stopPropagation(); setDeleteStudyId(study.id); }}
                     className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                     title={t("common.delete")}
                   >

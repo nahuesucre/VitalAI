@@ -5,8 +5,11 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from app.db.session import get_db
 from app.models.user import User
-from app.models.study import Study, StudyDocument
+from app.models.study import Study, StudyDocument, StudyRule, StudyVisit, StudyProcedure
+from app.models.patient import Patient, PatientScreening, PatientVisit, PatientVisitTask
+from app.models.alert import Alert
 from app.schemas.study import StudyCreate, StudyUpdate, StudyResponse, DocumentResponse
+from sqlalchemy import update, delete
 from app.core.deps import get_current_user
 import os
 
@@ -85,6 +88,39 @@ async def delete_study(
     study = result.scalar_one_or_none()
     if not study:
         raise HTTPException(status_code=404, detail="Study not found")
+
+    # Delete in dependency order to avoid FK violations
+    # 1. Get all patient IDs for this study
+    patient_ids_result = await db.execute(select(Patient.id).where(Patient.study_id == study_id))
+    patient_ids = [r[0] for r in patient_ids_result.all()]
+
+    if patient_ids:
+        # 2. Get all patient visit IDs
+        pv_ids_result = await db.execute(select(PatientVisit.id).where(PatientVisit.patient_id.in_(patient_ids)))
+        pv_ids = [r[0] for r in pv_ids_result.all()]
+
+        if pv_ids:
+            await db.execute(delete(PatientVisitTask).where(PatientVisitTask.patient_visit_id.in_(pv_ids)))
+            await db.execute(delete(Alert).where(Alert.patient_visit_id.in_(pv_ids)))
+            await db.execute(delete(PatientVisit).where(PatientVisit.id.in_(pv_ids)))
+
+        await db.execute(delete(PatientScreening).where(PatientScreening.patient_id.in_(patient_ids)))
+        await db.execute(delete(Alert).where(Alert.patient_id.in_(patient_ids)))
+        await db.execute(delete(Patient).where(Patient.study_id == study_id))
+
+    # 3. Delete structure
+    visit_ids_result = await db.execute(select(StudyVisit.id).where(StudyVisit.study_id == study_id))
+    visit_ids = [r[0] for r in visit_ids_result.all()]
+    if visit_ids:
+        await db.execute(delete(StudyProcedure).where(StudyProcedure.study_visit_id.in_(visit_ids)))
+    await db.execute(delete(StudyVisit).where(StudyVisit.study_id == study_id))
+    await db.execute(delete(StudyRule).where(StudyRule.study_id == study_id))
+
+    # 4. Delete documents and alerts
+    await db.execute(delete(Alert).where(Alert.study_id == study_id))
+    await db.execute(delete(StudyDocument).where(StudyDocument.study_id == study_id))
+
+    # 5. Delete study
     await db.delete(study)
 
 
@@ -126,6 +162,29 @@ async def upload_document(
     await db.flush()
     await db.refresh(doc)
     return doc
+
+
+@router.delete("/{study_id}/documents/{doc_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_document(
+    study_id: UUID,
+    doc_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(StudyDocument).where(StudyDocument.id == doc_id, StudyDocument.study_id == study_id)
+    )
+    doc = result.scalar_one_or_none()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    # Unlink rules referencing this document
+    await db.execute(
+        update(StudyRule).where(StudyRule.source_document_id == doc_id).values(source_document_id=None)
+    )
+    # Delete file from disk
+    if doc.file_path and os.path.exists(doc.file_path):
+        os.remove(doc.file_path)
+    await db.delete(doc)
 
 
 @router.get("/{study_id}/documents", response_model=list[DocumentResponse])

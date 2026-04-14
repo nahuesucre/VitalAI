@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import AppLayout from "@/components/layout/AppLayout";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import { useApp } from "@/contexts/AppContext";
 import { api } from "@/lib/api";
 import type { Study, StudyDocument, StudyVisit, StudyRule, Patient, PatientVisit } from "@/types";
@@ -37,6 +38,7 @@ export default function StudyDetailPage() {
   const [showCreatePatient, setShowCreatePatient] = useState(false);
   const [patientForm, setPatientForm] = useState({ subject_code: "", sex: "M", birth_year: 1980 });
   const [patientVisitsMap, setPatientVisitsMap] = useState<Record<string, PatientVisit[]>>({});
+  const [deleteDocId, setDeleteDocId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!studyId) return;
@@ -47,7 +49,8 @@ export default function StudyDetailPage() {
   }, [studyId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadDocs() {
-    try { setDocs(await api<StudyDocument[]>(`/studies/${studyId}/documents`)); } catch {}
+    const data = await api<StudyDocument[]>(`/studies/${studyId}/documents`).catch(() => null);
+    if (data) setDocs([...data]);
   }
   async function loadStructure() {
     try {
@@ -71,14 +74,36 @@ export default function StudyDetailPage() {
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>, docType: string) {
     const file = e.target.files?.[0];
     if (!file) return;
+    const input = e.target;
     setUploading(true);
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("document_type", docType);
-    formData.append("title", file.name);
-    await api(`/studies/${studyId}/documents`, { method: "POST", body: formData });
-    await loadDocs();
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("document_type", docType);
+      formData.append("title", file.name);
+      await api(`/studies/${studyId}/documents`, { method: "POST", body: formData });
+    } catch {
+      alert("Error al subir documento");
+    }
+    input.value = "";
     setUploading(false);
+    // Force reload docs from server
+    const freshDocs = await api<StudyDocument[]>(`/studies/${studyId}/documents`).catch(() => null);
+    if (freshDocs) setDocs(freshDocs);
+  }
+
+  async function handleDeleteDoc() {
+    if (!deleteDocId) return;
+    try {
+      await api(`/studies/${studyId}/documents/${deleteDocId}`, { method: "DELETE" });
+    } catch {}
+    setDeleteDocId(null);
+    const freshDocs = await api<StudyDocument[]>(`/studies/${studyId}/documents`).catch(() => null);
+    if (freshDocs) setDocs(freshDocs);
+    const freshVisits = await api<StudyVisit[]>(`/studies/${studyId}/structure/visits`).catch(() => null);
+    if (freshVisits) setVisits(freshVisits);
+    const freshRules = await api<StudyRule[]>(`/studies/${studyId}/structure/rules`).catch(() => null);
+    if (freshRules) setRules(freshRules);
   }
 
   async function handleParse(docId: string) {
@@ -128,6 +153,16 @@ export default function StudyDetailPage() {
 
   return (
     <AppLayout>
+      <ConfirmModal
+        open={!!deleteDocId}
+        title={t("common.delete")}
+        message={t("studies.confirmDelete")}
+        confirmLabel={t("common.delete")}
+        cancelLabel={t("common.cancel")}
+        danger
+        onConfirm={handleDeleteDoc}
+        onCancel={() => setDeleteDocId(null)}
+      />
       <div className="max-w-5xl">
         {/* Header */}
         <div className="flex items-start justify-between mb-6">
@@ -140,9 +175,11 @@ export default function StudyDetailPage() {
               <p className="text-sm text-gray-400">{t("studies.studyPhaseType")} {study.phase} — {t(STUDY_TYPE_KEYS[study.study_type || ""] || study.study_type || "")} · {t("studies.sponsoredBy")} {study.sponsor}</p>
             </div>
           </div>
-          <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${statusBadge}`}>
-            {study.status === "active" ? t("studies.activeRecruiting") : study.status === "draft" ? t("studies.draft") : study.status}
-          </span>
+          {study.status === "active" && (
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${statusBadge}`}>
+              {t("studies.activeRecruiting")}
+            </span>
+          )}
         </div>
 
         {/* Tabs */}
@@ -194,6 +231,13 @@ export default function StudyDetailPage() {
                       {parsing === doc.id ? t("common.processing") : doc.processing_status === "failed" ? t("detail.retryAI") : t("detail.processAI")}
                     </button>
                   )}
+                  <button
+                    onClick={() => setDeleteDocId(doc.id)}
+                    className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                    title={t("common.delete")}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                  </button>
                 </div>
               </div>
             ))}

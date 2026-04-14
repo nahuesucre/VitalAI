@@ -88,7 +88,7 @@ class StudyRule(Base):
     rule_type: Mapped[str] = mapped_column(String(50), nullable=False)
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
-    source_document_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("study_documents.id"))
+    source_document_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("study_documents.id", ondelete="SET NULL"))
     source_excerpt: Mapped[str | None] = mapped_column(Text)
     is_confirmed: Mapped[bool] = mapped_column(Boolean, default=False)
 

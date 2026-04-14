@@ -5,7 +5,7 @@ import { login } from "@/lib/auth";
 import { useApp } from "@/contexts/AppContext";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("admin@trialflow.ai");
+  const [email, setEmail] = useState("admin@vitalai.com");
   const [password, setPassword] = useState("password123");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -110,7 +110,7 @@ export default function LoginPage() {
         </form>
 
         <div className="mt-6 text-center text-xs text-gray-300">
-          Demo: admin@trialflow.ai / password123
+          Demo: admin@vitalai.com / password123
         </div>
       </div>
     </div>

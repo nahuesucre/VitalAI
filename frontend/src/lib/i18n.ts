@@ -89,7 +89,7 @@ const translations: Record<string, Record<Locale, string>> = {
   "studies.statusProcessed": { es: "Procesado", en: "Processed" },
   "studies.statusProcessing": { es: "Procesando", en: "Processing" },
   "studies.statusFailed": { es: "Error", en: "Failed" },
-  "studies.statusPending": { es: "Pendiente", en: "Pending" },
+  "studies.statusPending": { es: "Pendiente de procesar", en: "Pending processing" },
 
   // ─── Study Detail ───────────────────────────────────────────────────────────
   "detail.documents": { es: "Documentos", en: "Documents" },

@@ -14,19 +14,44 @@ export default function DashboardPage() {
   const { t, locale } = useApp();
 
   useEffect(() => {
-    api<Study[]>("/studies/").then((s) => {
+    api<Study[]>("/studies/").then(async (s) => {
       setStudies(s);
       if (s.length > 0) {
-        // Load metrics and alerts from the first study
-        api<MetricsOverview>(`/studies/${s[0].id}/metrics/overview`).then(setMetrics).catch(() => {});
-        api<Alert[]>(`/studies/${s[0].id}/alerts/`).then((a) => setAlerts(a.filter(al => al.status === "open"))).catch(() => {});
+        // Aggregate metrics and alerts from ALL studies
+        let totalMetrics: MetricsOverview = {
+          patients_by_status: {}, visits_by_status: {},
+          alerts_by_type: {}, alerts_by_severity: {},
+          common_missing_procedures: [], deviations_by_category: [],
+          total_patients: 0, total_visits: 0, total_alerts_open: 0,
+        };
+        const allAlerts: Alert[] = [];
+        await Promise.all(s.map(async (study) => {
+          try {
+            const m = await api<MetricsOverview>(`/studies/${study.id}/metrics/overview`);
+            totalMetrics.total_patients += m.total_patients || 0;
+            totalMetrics.total_visits += m.total_visits || 0;
+            totalMetrics.total_alerts_open += m.total_alerts_open || 0;
+            for (const [k, v] of Object.entries(m.patients_by_status || {}))
+              totalMetrics.patients_by_status[k] = (totalMetrics.patients_by_status[k] || 0) + v;
+            for (const [k, v] of Object.entries(m.visits_by_status || {}))
+              totalMetrics.visits_by_status[k] = (totalMetrics.visits_by_status[k] || 0) + v;
+          } catch {}
+          try {
+            const a = await api<Alert[]>(`/studies/${study.id}/alerts/`);
+            allAlerts.push(...a.filter(al => al.status === "open"));
+          } catch {}
+        }));
+        setMetrics(totalMetrics);
+        setAlerts(allAlerts);
       }
     }).catch(() => {});
   }, []);
 
-  const screeningCount = metrics?.patients_by_status?.["in_progress"] || 0;
+  const screeningCount = (metrics?.patients_by_status?.["in_progress"] || 0) + (metrics?.patients_by_status?.["not_started"] || 0);
+  const screeningDone = (metrics?.patients_by_status?.["eligible"] || 0) + (metrics?.patients_by_status?.["not_eligible"] || 0);
   const alertCount = metrics?.total_alerts_open || 0;
-  const visitCount = Object.values(metrics?.visits_by_status || {}).reduce((a, b) => a + b, 0);
+  const activeVisits = (metrics?.visits_by_status?.["planned"] || 0) + (metrics?.visits_by_status?.["in_progress"] || 0);
+  const completedVisits = metrics?.visits_by_status?.["completed"] || 0;
 
   return (
     <AppLayout>
@@ -44,8 +69,8 @@ export default function DashboardPage() {
           <div className="bg-white border border-sky-100 rounded-2xl p-5 flex items-start justify-between shadow-sm">
             <div>
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{t("dashboard.patientsScreening")}</p>
-              <p className="text-3xl font-bold text-gray-800 mt-1">{metrics?.total_patients || 0}</p>
-              <p className="text-xs text-gray-300 mt-1">{screeningCount > 0 ? `${screeningCount} ${t("dashboard.inEvaluation")}` : t("dashboard.createStudyStart")}</p>
+              <p className="text-3xl font-bold text-gray-800 mt-1">{screeningCount}</p>
+              <p className="text-xs text-gray-300 mt-1">{screeningDone > 0 ? `${screeningDone} ${t("dashboard.completed")}` : t("dashboard.createStudyStart")}</p>
             </div>
             <div className="w-10 h-10 bg-gradient-to-br from-sky-100 to-sky-200 rounded-xl flex items-center justify-center">
               <svg className="w-5 h-5 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>
@@ -54,8 +79,8 @@ export default function DashboardPage() {
           <div className="bg-white border border-sky-100 rounded-2xl p-5 flex items-start justify-between shadow-sm">
             <div>
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{t("dashboard.activeVisits")}</p>
-              <p className="text-3xl font-bold text-gray-800 mt-1">{visitCount}</p>
-              <p className="text-xs text-gray-300 mt-1">{metrics?.visits_by_status?.["completed"] || 0} {t("dashboard.completed")}</p>
+              <p className="text-3xl font-bold text-gray-800 mt-1">{activeVisits}</p>
+              <p className="text-xs text-gray-300 mt-1">{completedVisits} {t("dashboard.completed")}</p>
             </div>
             <div className="w-10 h-10 bg-gradient-to-br from-cyan-100 to-cyan-200 rounded-xl flex items-center justify-center">
               <svg className="w-5 h-5 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
@@ -113,13 +138,11 @@ export default function DashboardPage() {
                           {study.sponsor} · {t("dashboard.phase")} {study.phase}
                         </p>
                       </div>
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                        study.status === "active"
-                          ? "bg-sky-50 text-sky-600 border border-sky-200"
-                          : "bg-gray-50 text-gray-500 border border-gray-200"
-                      }`}>
-                        {study.status === "active" ? t("dashboard.active") : study.status === "draft" ? t("dashboard.draft") : study.status}
-                      </span>
+                      {study.status === "active" && (
+                        <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-50 text-sky-600 border border-sky-200">
+                          {t("dashboard.active")}
+                        </span>
+                      )}
                     </div>
                   ))}
                 </div>

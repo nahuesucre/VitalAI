@@ -8,7 +8,7 @@ _ROOT_ENV = Path(__file__).resolve().parent.parent.parent.parent / ".env"
 
 class Settings(BaseSettings):
     # Database — local PostgreSQL for dev, Supabase for prod
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:changeme@localhost:5432/trialflow"
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:changeme@localhost:5432/vitalai"
 
     # Supabase
     SUPABASE_URL: str = ""

@@ -135,7 +135,7 @@ class LLMService:
         return self._extract_json(response.content[0].text)
 
     def chat(self, message: str, context: str, conversation_history: list[dict] = None) -> str:
-        system_prompt = f"""You are an AI assistant for a clinical trial operations platform called TrialFlow AI.
+        system_prompt = f"""You are an AI assistant for a clinical trial operations platform called VitalAI.
 You help coordinators and physicians with operational questions about the study.
 
 You have access to the following context:
