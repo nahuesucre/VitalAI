@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import AppLayout from "@/components/layout/AppLayout";
+import { useApp } from "@/contexts/AppContext";
 import { api } from "@/lib/api";
 import type { Study } from "@/types";
 
@@ -11,6 +12,7 @@ export default function StudiesPage() {
   const [form, setForm] = useState({ name: "", sponsor: "", phase: "III", study_type: "interventional_drug", description: "" });
   const [creating, setCreating] = useState(false);
   const router = useRouter();
+  const { t } = useApp();
 
   useEffect(() => {
     api<Study[]>("/studies/").then(setStudies).catch(() => {});
@@ -27,7 +29,7 @@ export default function StudiesPage() {
       setShowCreate(false);
       router.push(`/studies/${study.id}`);
     } catch {
-      alert("Error al crear estudio");
+      alert(t("studies.errorCreate"));
     } finally {
       setCreating(false);
     }
@@ -37,12 +39,12 @@ export default function StudiesPage() {
     <AppLayout>
       <div className="max-w-5xl">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-gray-800">Estudios</h2>
+          <h2 className="text-xl font-bold text-gray-800">{t("studies.title")}</h2>
           <button
             onClick={() => setShowCreate(true)}
-            className="px-5 py-2 bg-gradient-to-r from-sky-400 to-cyan-500 hover:from-sky-500 hover:to-cyan-600 text-white rounded-xl text-sm font-semibold transition-all shadow-sm hover:shadow-md"
+            className="px-5 py-2 bg-gradient-to-r from-sky-400 to-cyan-500 hover:from-sky-500 hover:to-cyan-600 text-white rounded-xl text-sm font-semibold transition-all shadow-sm hover:shadow-md cursor-pointer"
           >
-            + Nuevo estudio
+            {t("studies.create")}
           </button>
         </div>
 
@@ -50,21 +52,21 @@ export default function StudiesPage() {
         {showCreate && (
           <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
             <div className="bg-white rounded-2xl p-8 w-full max-w-lg shadow-2xl border border-sky-100">
-              <h3 className="text-lg font-bold text-gray-800 mb-6">Crear nuevo estudio</h3>
+              <h3 className="text-lg font-bold text-gray-800 mb-6">{t("studies.createTitle")}</h3>
               <form onSubmit={handleCreate} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1.5">Nombre del estudio</label>
+                  <label className="block text-sm font-medium text-gray-600 mb-1.5">{t("studies.name")}</label>
                   <input
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    placeholder="Ej: RELIEHF"
+                    placeholder={t("studies.namePlaceholder")}
                     className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent transition-shadow"
                     required
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1.5">Sponsor</label>
+                    <label className="block text-sm font-medium text-gray-600 mb-1.5">{t("studies.sponsor")}</label>
                     <input
                       value={form.sponsor}
                       onChange={(e) => setForm({ ...form, sponsor: e.target.value })}
@@ -72,21 +74,21 @@ export default function StudiesPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1.5">Fase</label>
+                    <label className="block text-sm font-medium text-gray-600 mb-1.5">{t("studies.phase")}</label>
                     <select
                       value={form.phase}
                       onChange={(e) => setForm({ ...form, phase: e.target.value })}
                       className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent"
                     >
-                      <option value="I">Fase I</option>
-                      <option value="II">Fase II</option>
-                      <option value="III">Fase III</option>
-                      <option value="IV">Fase IV</option>
+                      <option value="I">{t("studies.phase1")}</option>
+                      <option value="II">{t("studies.phase2")}</option>
+                      <option value="III">{t("studies.phase3")}</option>
+                      <option value="IV">{t("studies.phase4")}</option>
                     </select>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1.5">Descripción</label>
+                  <label className="block text-sm font-medium text-gray-600 mb-1.5">{t("studies.description")}</label>
                   <textarea
                     value={form.description}
                     onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -98,16 +100,16 @@ export default function StudiesPage() {
                   <button
                     type="button"
                     onClick={() => setShowCreate(false)}
-                    className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 font-medium text-sm transition-colors"
+                    className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 font-medium text-sm transition-colors cursor-pointer"
                   >
-                    Cancelar
+                    {t("common.cancel")}
                   </button>
                   <button
                     type="submit"
                     disabled={creating}
-                    className="flex-1 py-2.5 bg-gradient-to-r from-sky-400 to-cyan-500 hover:from-sky-500 hover:to-cyan-600 disabled:opacity-60 text-white rounded-xl font-semibold text-sm transition-all"
+                    className="flex-1 py-2.5 bg-gradient-to-r from-sky-400 to-cyan-500 hover:from-sky-500 hover:to-cyan-600 disabled:opacity-60 text-white rounded-xl font-semibold text-sm transition-all cursor-pointer"
                   >
-                    {creating ? "Creando..." : "Crear estudio"}
+                    {creating ? t("common.creating") : t("studies.createBtn")}
                   </button>
                 </div>
               </form>
@@ -120,7 +122,7 @@ export default function StudiesPage() {
             <div className="w-12 h-12 bg-sky-50 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-6 h-6 text-sky-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
             </div>
-            <p className="text-gray-400 text-sm">No hay estudios. Creá uno para empezar.</p>
+            <p className="text-gray-400 text-sm">{t("studies.noStudies")}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -137,7 +139,7 @@ export default function StudiesPage() {
                   <div>
                     <h4 className="text-sm font-semibold text-gray-800">{study.name}</h4>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      Estudio fase {study.phase} — {study.study_type} · Patrocinador: {study.sponsor}
+                      {t("studies.studyPhaseType")} {study.phase} — {study.study_type} · {t("studies.sponsoredBy")} {study.sponsor}
                     </p>
                   </div>
                 </div>
@@ -146,7 +148,7 @@ export default function StudiesPage() {
                     ? "bg-sky-50 text-sky-600 border-sky-200"
                     : "bg-gray-50 text-gray-500 border-gray-200"
                 }`}>
-                  {study.status === "active" ? "Activo — Reclutando" : study.status === "draft" ? "Borrador" : study.status}
+                  {study.status === "active" ? t("studies.activeRecruiting") : study.status === "draft" ? t("studies.draft") : study.status}
                 </span>
               </div>
             ))}

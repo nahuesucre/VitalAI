@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import AppLayout from "@/components/layout/AppLayout";
+import { useApp } from "@/contexts/AppContext";
 import { api } from "@/lib/api";
 import type { Study, StudyDocument, StudyVisit, StudyRule, Patient } from "@/types";
 
@@ -10,6 +11,7 @@ type Tab = "documents" | "structure" | "patients";
 export default function StudyDetailPage() {
   const { studyId } = useParams();
   const router = useRouter();
+  const { t, locale } = useApp();
   const [study, setStudy] = useState<Study | null>(null);
   const [tab, setTab] = useState<Tab>("documents");
   const [docs, setDocs] = useState<StudyDocument[]>([]);
@@ -90,16 +92,16 @@ export default function StudyDetailPage() {
   }
 
   const tabs: { key: Tab; label: string }[] = [
-    { key: "documents", label: "Documentos" },
-    { key: "structure", label: "Estructura Operativa" },
-    { key: "patients", label: "Pacientes" },
+    { key: "documents", label: t("detail.documents") },
+    { key: "structure", label: t("detail.structure") },
+    { key: "patients", label: t("detail.patients") },
   ];
 
   const statusBadge = study?.status === "active"
     ? "bg-sky-50 text-sky-600 border-sky-200"
     : "bg-gray-50 text-gray-500 border-gray-200";
 
-  if (!study) return <AppLayout><div className="text-gray-400 text-sm">Cargando...</div></AppLayout>;
+  if (!study) return <AppLayout><div className="text-gray-400 text-sm">{t("common.loading")}</div></AppLayout>;
 
   return (
     <AppLayout>
@@ -112,28 +114,28 @@ export default function StudyDetailPage() {
             </div>
             <div>
               <h2 className="text-xl font-bold text-gray-800">{study.name}</h2>
-              <p className="text-sm text-gray-400">Estudio fase {study.phase} — {study.study_type} · Patrocinador: {study.sponsor}</p>
+              <p className="text-sm text-gray-400">{t("studies.studyPhaseType")} {study.phase} — {study.study_type} · {t("studies.sponsoredBy")} {study.sponsor}</p>
             </div>
           </div>
           <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${statusBadge}`}>
-            {study.status === "active" ? "Activo — Reclutando" : study.status === "draft" ? "Borrador" : study.status}
+            {study.status === "active" ? t("studies.activeRecruiting") : study.status === "draft" ? t("studies.draft") : study.status}
           </span>
         </div>
 
         {/* Tabs */}
         <div className="border-b border-sky-100 mb-6">
           <div className="flex gap-6">
-            {tabs.map((t) => (
+            {tabs.map((tabItem) => (
               <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
-                className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
-                  tab === t.key
+                key={tabItem.key}
+                onClick={() => setTab(tabItem.key)}
+                className={`pb-3 text-sm font-medium border-b-2 transition-colors cursor-pointer ${
+                  tab === tabItem.key
                     ? "border-sky-500 text-sky-500"
                     : "border-transparent text-gray-400 hover:text-gray-600"
                 }`}
               >
-                {t.label}
+                {tabItem.label}
               </button>
             ))}
           </div>
@@ -150,7 +152,7 @@ export default function StudyDetailPage() {
                   </div>
                   <div>
                     <h4 className="text-sm font-medium text-gray-800">{doc.title}</h4>
-                    <p className="text-xs text-gray-400">{doc.document_type.toUpperCase()} · {new Date(doc.created_at).toLocaleDateString("es-AR")}</p>
+                    <p className="text-xs text-gray-400">{doc.document_type.toUpperCase()} · {new Date(doc.created_at).toLocaleDateString(locale === "es" ? "es-AR" : "en-US")}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -164,9 +166,9 @@ export default function StudyDetailPage() {
                     <button
                       onClick={() => handleParse(doc.id)}
                       disabled={!!parsing}
-                      className="px-3 py-1.5 bg-gradient-to-r from-sky-400 to-cyan-500 hover:from-sky-500 hover:to-cyan-600 disabled:opacity-60 text-white rounded-lg text-xs font-semibold transition-all"
+                      className="px-3 py-1.5 bg-gradient-to-r from-sky-400 to-cyan-500 hover:from-sky-500 hover:to-cyan-600 disabled:opacity-60 text-white rounded-lg text-xs font-semibold transition-all cursor-pointer"
                     >
-                      {parsing === doc.id ? "Procesando..." : "Procesar con IA"}
+                      {parsing === doc.id ? t("common.processing") : t("detail.processAI")}
                     </button>
                   )}
                 </div>
@@ -174,16 +176,16 @@ export default function StudyDetailPage() {
             ))}
 
             <div className="bg-white border-2 border-dashed border-sky-100 rounded-2xl p-8 text-center">
-              <p className="text-sm text-gray-400 mb-4">Subir documento del estudio</p>
+              <p className="text-sm text-gray-400 mb-4">{t("detail.uploadDoc")}</p>
               <div className="flex justify-center gap-3">
                 {["protocol", "icf", "ib"].map((type) => (
                   <label key={type} className="px-4 py-2 border border-sky-200 text-sky-600 rounded-xl text-sm hover:bg-sky-50 cursor-pointer font-medium transition-colors">
-                    {type === "protocol" ? "Protocolo" : type === "icf" ? "FCI" : "IB"}
+                    {type === "protocol" ? t("detail.protocol") : type === "icf" ? t("detail.icf") : t("detail.ib")}
                     <input type="file" className="hidden" accept=".pdf,.docx" onChange={(e) => handleUpload(e, type)} disabled={uploading} />
                   </label>
                 ))}
               </div>
-              {uploading && <p className="text-xs text-sky-500 mt-3">Subiendo documento...</p>}
+              {uploading && <p className="text-xs text-sky-500 mt-3">{t("common.uploading")}</p>}
             </div>
           </div>
         )}
@@ -193,11 +195,11 @@ export default function StudyDetailPage() {
           <div>
             {visits.length === 0 ? (
               <div className="bg-white border border-sky-100 rounded-2xl p-12 text-center shadow-sm">
-                <p className="text-sm text-gray-400">No hay estructura extraída aún. Subí un protocolo y procesalo con IA.</p>
+                <p className="text-sm text-gray-400">{t("detail.noStructure")}</p>
               </div>
             ) : (
               <>
-                <p className="text-sm text-gray-400 mb-5">Estructura extraída por IA del protocolo. Revisá y confirmá cada visita antes de operativizar.</p>
+                <p className="text-sm text-gray-400 mb-5">{t("detail.structureDesc")}</p>
                 <div className="space-y-4">
                   {visits.map((visit) => (
                     <div key={visit.id} className="bg-white border border-sky-100 rounded-2xl p-6 shadow-sm">
@@ -208,8 +210,8 @@ export default function StudyDetailPage() {
                         </div>
                         {visit.day_nominal !== null && (
                           <span className="text-xs text-sky-500 bg-sky-50 px-3 py-1 rounded-full border border-sky-100">
-                            Día {visit.day_nominal}
-                            {visit.window_min_days !== null && ` ± ${visit.window_max_days} días`}
+                            {t("detail.day")} {visit.day_nominal}
+                            {visit.window_min_days !== null && ` ± ${visit.window_max_days} ${t("detail.days")}`}
                           </span>
                         )}
                       </div>
@@ -229,17 +231,17 @@ export default function StudyDetailPage() {
 
                 {rules.length > 0 && (
                   <div className="mt-8">
-                    <h3 className="font-semibold text-gray-800 mb-4">Criterios de Screening</h3>
+                    <h3 className="font-semibold text-gray-800 mb-4">{t("detail.screeningCriteria")}</h3>
                     <div className="bg-white border border-sky-100 rounded-2xl divide-y divide-sky-50 shadow-sm">
                       {rules.filter(r => r.rule_type === "inclusion").map((rule) => (
                         <div key={rule.id} className="px-5 py-3 flex items-center gap-3">
-                          <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full font-semibold">Inclusión</span>
+                          <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full font-semibold">{t("detail.inclusion")}</span>
                           <span className="text-sm text-gray-700">{rule.title}</span>
                         </div>
                       ))}
                       {rules.filter(r => r.rule_type === "exclusion").map((rule) => (
                         <div key={rule.id} className="px-5 py-3 flex items-center gap-3">
-                          <span className="text-xs bg-red-50 text-red-700 px-2 py-0.5 rounded-full font-semibold">Exclusión</span>
+                          <span className="text-xs bg-red-50 text-red-700 px-2 py-0.5 rounded-full font-semibold">{t("detail.exclusion")}</span>
                           <span className="text-sm text-gray-700">{rule.title}</span>
                         </div>
                       ))}
@@ -251,9 +253,9 @@ export default function StudyDetailPage() {
                   <button
                     onClick={handleConfirm}
                     disabled={confirming}
-                    className="mt-6 px-6 py-2.5 bg-gradient-to-r from-sky-400 to-cyan-500 hover:from-sky-500 hover:to-cyan-600 disabled:opacity-60 text-white rounded-xl text-sm font-semibold transition-all shadow-sm"
+                    className="mt-6 px-6 py-2.5 bg-gradient-to-r from-sky-400 to-cyan-500 hover:from-sky-500 hover:to-cyan-600 disabled:opacity-60 text-white rounded-xl text-sm font-semibold transition-all shadow-sm cursor-pointer"
                   >
-                    {confirming ? "Confirmando..." : "Confirmar estructura completa"}
+                    {confirming ? t("common.confirming") : t("detail.confirmStructure")}
                   </button>
                 )}
               </>
@@ -267,37 +269,37 @@ export default function StudyDetailPage() {
             <div className="flex justify-end mb-4">
               <button
                 onClick={() => setShowCreatePatient(true)}
-                className="px-4 py-2 bg-gradient-to-r from-sky-400 to-cyan-500 hover:from-sky-500 hover:to-cyan-600 text-white rounded-xl text-sm font-semibold transition-all shadow-sm"
+                className="px-4 py-2 bg-gradient-to-r from-sky-400 to-cyan-500 hover:from-sky-500 hover:to-cyan-600 text-white rounded-xl text-sm font-semibold transition-all shadow-sm cursor-pointer"
               >
-                + Nuevo paciente
+                {t("detail.newPatient")}
               </button>
             </div>
 
             {showCreatePatient && (
               <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
                 <div className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl border border-sky-100">
-                  <h3 className="text-lg font-bold text-gray-800 mb-6">Nuevo paciente</h3>
+                  <h3 className="text-lg font-bold text-gray-800 mb-6">{t("detail.newPatientTitle")}</h3>
                   <form onSubmit={handleCreatePatient} className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-1.5">Código del sujeto</label>
-                      <input value={patientForm.subject_code} onChange={(e) => setPatientForm({ ...patientForm, subject_code: e.target.value })} placeholder="Ej: SUBJ-0001" className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent" required />
+                      <label className="block text-sm font-medium text-gray-600 mb-1.5">{t("detail.subjectCode")}</label>
+                      <input value={patientForm.subject_code} onChange={(e) => setPatientForm({ ...patientForm, subject_code: e.target.value })} placeholder={t("detail.subjectPlaceholder")} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent" required />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-600 mb-1.5">Sexo</label>
+                        <label className="block text-sm font-medium text-gray-600 mb-1.5">{t("detail.sex")}</label>
                         <select value={patientForm.sex} onChange={(e) => setPatientForm({ ...patientForm, sex: e.target.value })} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent">
-                          <option value="M">Masculino</option>
-                          <option value="F">Femenino</option>
+                          <option value="M">{t("detail.male")}</option>
+                          <option value="F">{t("detail.female")}</option>
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-600 mb-1.5">Año de nacimiento</label>
+                        <label className="block text-sm font-medium text-gray-600 mb-1.5">{t("detail.birthYear")}</label>
                         <input type="number" value={patientForm.birth_year} onChange={(e) => setPatientForm({ ...patientForm, birth_year: Number(e.target.value) })} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent" />
                       </div>
                     </div>
                     <div className="flex gap-3 pt-2">
-                      <button type="button" onClick={() => setShowCreatePatient(false)} className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 font-medium text-sm">Cancelar</button>
-                      <button type="submit" className="flex-1 py-2.5 bg-gradient-to-r from-sky-400 to-cyan-500 hover:from-sky-500 hover:to-cyan-600 text-white rounded-xl font-semibold text-sm">Crear paciente</button>
+                      <button type="button" onClick={() => setShowCreatePatient(false)} className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 font-medium text-sm cursor-pointer">{t("common.cancel")}</button>
+                      <button type="submit" className="flex-1 py-2.5 bg-gradient-to-r from-sky-400 to-cyan-500 hover:from-sky-500 hover:to-cyan-600 text-white rounded-xl font-semibold text-sm cursor-pointer">{t("detail.createPatient")}</button>
                     </div>
                   </form>
                 </div>
@@ -306,17 +308,17 @@ export default function StudyDetailPage() {
 
             {patients.length === 0 ? (
               <div className="bg-white border border-sky-100 rounded-2xl p-12 text-center shadow-sm">
-                <p className="text-sm text-gray-400">No hay pacientes. Creá uno para empezar el screening.</p>
+                <p className="text-sm text-gray-400">{t("detail.noPatients")}</p>
               </div>
             ) : (
               <div className="bg-white border border-sky-100 rounded-2xl overflow-hidden shadow-sm">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-sky-50 bg-sky-50/40">
-                      <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">ID Paciente</th>
-                      <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">Screening</th>
-                      <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">Estado</th>
-                      <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">Fecha</th>
+                      <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{t("detail.patientId")}</th>
+                      <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{t("detail.screening")}</th>
+                      <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{t("detail.status")}</th>
+                      <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{t("detail.date")}</th>
                       <th className="px-5 py-3"></th>
                     </tr>
                   </thead>
@@ -330,12 +332,12 @@ export default function StudyDetailPage() {
                             p.screening_status === "not_eligible" ? "bg-red-50 text-red-700" :
                             p.screening_status === "in_progress" ? "bg-amber-50 text-amber-700" :
                             "bg-gray-50 text-gray-500"
-                          }`}>{p.screening_status === "eligible" ? "Elegible" : p.screening_status === "not_eligible" ? "No elegible" : p.screening_status === "in_progress" ? "En curso" : "Pendiente"}</span>
+                          }`}>{p.screening_status === "eligible" ? t("detail.eligible") : p.screening_status === "not_eligible" ? t("detail.notEligible") : p.screening_status === "in_progress" ? t("detail.inProgress") : t("detail.pending")}</span>
                         </td>
                         <td className="px-5 py-4 text-sm text-gray-500 capitalize">{p.enrollment_status}</td>
-                        <td className="px-5 py-4 text-sm text-gray-400">{new Date(p.created_at).toLocaleDateString("es-AR")}</td>
+                        <td className="px-5 py-4 text-sm text-gray-400">{new Date(p.created_at).toLocaleDateString(locale === "es" ? "es-AR" : "en-US")}</td>
                         <td className="px-5 py-4 text-right">
-                          <span className="text-sky-500 text-sm font-medium">Ver →</span>
+                          <span className="text-sky-500 text-sm font-medium">{t("detail.view")}</span>
                         </td>
                       </tr>
                     ))}

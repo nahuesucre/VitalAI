@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { AppProvider } from "@/contexts/AppContext";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -18,9 +19,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={`${inter.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col font-sans" style={{ backgroundColor: "#f0f9ff", color: "#0c1a24" }}>
-        {children}
+    <html lang="en" className={`${inter.variable} h-full antialiased`}>
+      <body className="min-h-full flex flex-col font-sans" style={{ backgroundColor: "var(--bg-app)", color: "var(--fg-app)" }}>
+        <AppProvider>
+          {children}
+        </AppProvider>
       </body>
     </html>
   );
