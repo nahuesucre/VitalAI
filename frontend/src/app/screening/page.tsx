@@ -56,7 +56,7 @@ export default function GlobalScreeningPage() {
                   <tr
                     key={p.id}
                     className="hover:bg-sky-50/40 cursor-pointer transition-colors"
-                    onClick={() => router.push(`/studies/${p.studyId}/patients/${p.id}/screening`)}
+                    onClick={() => router.push(`/studies/${p.studyId}/patients/${p.id}`)}
                   >
                     <td className="px-5 py-4 text-sm text-gray-600">{p.studyName}</td>
                     <td className="px-5 py-4 text-sm font-semibold text-gray-800">{p.subject_code}</td>

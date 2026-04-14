@@ -71,30 +71,73 @@ async def chat(
             context_parts.append(f"Document ({doc.document_type}) excerpt:\n{excerpt}")
             context_labels.append(f"document_{doc.document_type}")
 
-    # Patient context (if provided)
-    if data.patient_id:
-        patient_result = await db.execute(
-            select(Patient).where(Patient.id == data.patient_id)
-        )
-        patient = patient_result.scalar_one_or_none()
-        if patient:
-            context_parts.append(
-                f"Patient: {patient.subject_code}, Sex: {patient.sex}, "
-                f"Screening: {patient.screening_status}, Enrollment: {patient.enrollment_status}"
+    # Load ALL patients and their visits for this study
+    all_patients_result = await db.execute(
+        select(Patient).where(Patient.study_id == data.study_id)
+    )
+    all_patients = all_patients_result.scalars().all()
+    if all_patients:
+        patient_summaries = []
+        for pat in all_patients:
+            # Get visits for this patient
+            pat_visits_result = await db.execute(
+                select(PatientVisit, StudyVisit)
+                .join(StudyVisit, StudyVisit.id == PatientVisit.study_visit_id)
+                .where(PatientVisit.patient_id == pat.id)
+                .order_by(StudyVisit.order_index)
             )
-            context_labels.append("patient_info")
+            pat_visits = pat_visits_result.all()
 
-            # Screening
-            screening_result = await db.execute(
-                select(PatientScreening).where(PatientScreening.patient_id == data.patient_id)
-            )
-            screening = screening_result.scalars().all()
-            if screening:
-                screening_text = "\n".join(
-                    f"- [{s.criterion_type}] {s.criterion_name}: {s.status}" for s in screening
+            visit_info = []
+            for pv, sv in pat_visits:
+                # Count tasks
+                tasks_result = await db.execute(
+                    select(PatientVisitTask).where(PatientVisitTask.patient_visit_id == pv.id)
                 )
-                context_parts.append(f"Patient screening:\n{screening_text}")
-                context_labels.append("patient_screening")
+                tasks = tasks_result.scalars().all()
+                done = sum(1 for t in tasks if t.status == "completed")
+                total = len(tasks)
+                visit_info.append(
+                    f"  - {sv.visit_code or sv.visit_name} ({sv.visit_name}): status={pv.visit_status}, "
+                    f"date={pv.visit_date}, procedures={done}/{total} completed"
+                )
+
+            # Find next visit (first study visit not yet created for this patient)
+            created_visit_ids = {pv.study_visit_id for pv, _ in pat_visits}
+            next_visit = None
+            for v in visits:
+                if v.id not in created_visit_ids:
+                    next_visit = v
+                    break
+
+            summary = (
+                f"Patient {pat.subject_code}: sex={pat.sex}, screening={pat.screening_status}, "
+                f"enrollment={pat.enrollment_status}"
+            )
+            if visit_info:
+                summary += "\n  Visits:\n" + "\n".join(visit_info)
+            else:
+                summary += "\n  No visits yet."
+            if next_visit:
+                summary += f"\n  Next visit due: {next_visit.visit_code or next_visit.visit_name} ({next_visit.visit_name})"
+
+            patient_summaries.append(summary)
+
+        context_parts.append("All patients in study:\n" + "\n".join(patient_summaries))
+        context_labels.append("all_patients")
+
+    # Specific patient context (if provided)
+    if data.patient_id:
+        screening_result = await db.execute(
+            select(PatientScreening).where(PatientScreening.patient_id == data.patient_id)
+        )
+        screening = screening_result.scalars().all()
+        if screening:
+            screening_text = "\n".join(
+                f"- [{s.criterion_type}] {s.criterion_name}: {s.status}" for s in screening
+            )
+            context_parts.append(f"Patient screening detail:\n{screening_text}")
+            context_labels.append("patient_screening")
 
     # Visit context (if provided)
     if data.patient_visit_id:

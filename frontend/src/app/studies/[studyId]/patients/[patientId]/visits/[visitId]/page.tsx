@@ -4,20 +4,19 @@ import { useParams, useRouter } from "next/navigation";
 import AppLayout from "@/components/layout/AppLayout";
 import { api } from "@/lib/api";
 import { useApp } from "@/contexts/AppContext";
-import type { PatientVisit, StudyVisit, VisitTask, Alert } from "@/types";
+import type { PatientVisit, StudyVisit, VisitTask } from "@/types";
 
 export default function VisitPage() {
   const { studyId, patientId, visitId } = useParams();
   const router = useRouter();
   const { t } = useApp();
   const [visit, setVisit] = useState<PatientVisit | null>(null);
-  const [alerts, setAlerts] = useState<Alert[]>([]);
   const [updatingTask, setUpdatingTask] = useState<string | null>(null);
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
 
   useEffect(() => {
     if (!visitId || visitId === "new") return;
     loadVisit();
-    loadAlerts();
   }, [visitId]);
 
   async function loadVisit() {
@@ -25,13 +24,22 @@ export default function VisitPage() {
     setVisit(v);
   }
 
-  async function loadAlerts() {
-    const a = await api<Alert[]>(`/studies/${studyId}/alerts/?patient_id=${patientId}`);
-    setAlerts(a.filter(al => al.status === "open"));
+  async function tryCompleteVisit() {
+    // Reload fresh from server before checking
+    const fresh = await api<PatientVisit>(`/patients/${patientId}/visits/${visitId}`);
+    setVisit(fresh);
+    const issues = fresh.tasks.filter(t =>
+      (t.is_critical && t.status !== "completed" && t.status !== "not_applicable")
+    );
+    if (issues.length > 0) {
+      setShowCompleteModal(true);
+    } else {
+      doCompleteVisit();
+    }
   }
 
-  async function completeVisit() {
-    if (!confirm(t("visit.confirmComplete"))) return;
+  async function doCompleteVisit() {
+    setShowCompleteModal(false);
     await api(`/patients/${patientId}/visits/${visitId}`, {
       method: "PUT",
       body: JSON.stringify({ visit_status: "completed" }),
@@ -41,14 +49,20 @@ export default function VisitPage() {
 
   async function updateTask(taskId: string, status: string) {
     setUpdatingTask(taskId);
-    await api(`/patients/${patientId}/visits/${visitId}/tasks/${taskId}`, {
-      method: "PUT",
-      body: JSON.stringify({ status }),
-    });
-    await loadVisit();
-    // Check alerts
-    await api(`/patients/${patientId}/visits/${visitId}/check-alerts`, { method: "POST" });
-    await loadAlerts();
+    // Optimistic update
+    setVisit(prev => prev ? {
+      ...prev,
+      tasks: prev.tasks.map(t => t.id === taskId ? { ...t, status } : t),
+    } : prev);
+    try {
+      await api(`/patients/${patientId}/visits/${visitId}/tasks/${taskId}`, {
+        method: "PUT",
+        body: JSON.stringify({ status }),
+      });
+      await loadVisit();
+    } catch {
+      await loadVisit();
+    }
     setUpdatingTask(null);
   }
 
@@ -65,15 +79,40 @@ export default function VisitPage() {
   return (
     <AppLayout>
       <div className="max-w-4xl">
-        {/* Alert banner */}
-        {alerts.length > 0 && (
-          <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
-            <svg className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
-            <div>
-              <p className="text-sm font-medium text-amber-800">{t("visit.attention")}: {alerts.length} {t("visit.alertActive")}</p>
-              {alerts.map((a) => (
-                <p key={a.id} className="text-xs text-amber-700 mt-1">{a.title}</p>
-              ))}
+        {/* Alert modal when trying to complete with issues */}
+        {showCompleteModal && (
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl border border-red-100">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center">
+                  <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+                </div>
+                <h3 className="text-lg font-bold text-gray-800">{t("visit.alertTitle")}</h3>
+              </div>
+              <p className="text-sm text-gray-600 mb-4">{t("visit.alertDesc")}</p>
+              <div className="space-y-2 mb-6">
+                {visit!.tasks.filter(t => t.is_critical && t.status !== "completed" && t.status !== "not_applicable").map(t => (
+                  <div key={t.id} className="flex items-center gap-2 px-3 py-2 bg-red-50 rounded-lg">
+                    <span className="px-1.5 py-0.5 bg-red-100 text-red-600 text-[10px] font-semibold rounded">{t.is_critical ? "CRITICO" : ""}</span>
+                    <span className="text-sm text-red-800">{t.procedure_name}</span>
+                    <span className="text-xs text-red-500 ml-auto">{t.status === "pending" ? "Pendiente" : t.status === "missing" ? "Faltante" : t.status}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowCompleteModal(false)}
+                  className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 font-medium text-sm cursor-pointer"
+                >
+                  {t("common.cancel")}
+                </button>
+                <button
+                  onClick={doCompleteVisit}
+                  className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold text-sm cursor-pointer"
+                >
+                  {t("visit.completeAnyway")}
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -92,7 +131,7 @@ export default function VisitPage() {
           </div>
         </div>
 
-        <button onClick={() => router.push(`/studies/${studyId}/patients/${patientId}/screening`)} className="text-sm text-teal-600 hover:text-teal-700 mb-6 inline-block cursor-pointer">{t("visit.backToPatient")}</button>
+        <button onClick={() => router.push(`/studies/${studyId}/patients/${patientId}`)} className="text-sm text-teal-600 hover:text-teal-700 mb-6 inline-block cursor-pointer">{t("visit.backToPatient")}</button>
 
         {/* Visit status + complete button */}
         <div className="flex items-center justify-between mb-6 bg-white border border-gray-200 rounded-xl px-5 py-4">
@@ -107,14 +146,24 @@ export default function VisitPage() {
                visit!.visit_status === "in_progress" ? t("visit.statusInProgress") : t("visit.statusPlanned")}
             </span>
           </div>
-          {visit!.visit_status !== "completed" && (
-            <button
-              onClick={completeVisit}
-              className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-semibold transition-colors cursor-pointer"
-            >
-              {t("visit.complete")}
-            </button>
-          )}
+          <div className="flex gap-2">
+            {visit!.visit_status === "completed" && (
+              <button
+                onClick={() => router.push(`/studies/${studyId}/patients/${patientId}/visits/new`)}
+                className="px-4 py-2 bg-gradient-to-r from-sky-400 to-cyan-500 hover:from-sky-500 hover:to-cyan-600 text-white rounded-lg text-sm font-semibold transition-all cursor-pointer"
+              >
+                {t("visit.nextVisit")} →
+              </button>
+            )}
+            {visit!.visit_status !== "completed" && (
+              <button
+                onClick={tryCompleteVisit}
+                className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-semibold transition-colors cursor-pointer"
+              >
+                {t("visit.complete")}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Procedures */}

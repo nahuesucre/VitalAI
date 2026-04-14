@@ -202,6 +202,21 @@ async def update_task(
         task.completed_by = current_user.id
         task.completed_at = datetime.now(timezone.utc)
 
+        # Auto-resolve alerts for this procedure
+        proc_name = task.study_procedure.procedure_name if task.study_procedure else None
+        if proc_name:
+            from app.models.alert import Alert
+            alerts_result = await db.execute(
+                select(Alert).where(
+                    Alert.patient_visit_id == visit_id,
+                    Alert.status == "open",
+                    Alert.title.contains(proc_name),
+                )
+            )
+            for alert in alerts_result.scalars().all():
+                alert.status = "resolved"
+                alert.resolved_at = datetime.now(timezone.utc)
+
     await db.flush()
     await db.refresh(task)
     return TaskResponse(

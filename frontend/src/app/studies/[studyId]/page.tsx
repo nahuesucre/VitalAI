@@ -348,7 +348,7 @@ export default function StudyDetailPage() {
                   </thead>
                   <tbody className="divide-y divide-sky-50">
                     {patients.map((p) => (
-                      <tr key={p.id} className="hover:bg-sky-50/40 cursor-pointer transition-colors" onClick={() => router.push(`/studies/${studyId}/patients/${p.id}/screening`)}>
+                      <tr key={p.id} className="hover:bg-sky-50/40 cursor-pointer transition-colors" onClick={() => router.push(`/studies/${studyId}/patients/${p.id}`)}>
                         <td className="px-5 py-4 text-sm font-semibold text-gray-800">{p.subject_code}</td>
                         <td className="px-5 py-4">
                           <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${

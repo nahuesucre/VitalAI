@@ -95,11 +95,28 @@ async def check_screening_alerts(patient_id: UUID, study_id: UUID, db: AsyncSess
 
 
 async def run_alerts_for_visit(patient_visit_id: UUID, study_id: UUID, db: AsyncSession) -> list[Alert]:
-    """Run all alert checks for a visit and save new alerts."""
+    """Run all alert checks for a visit and save new alerts. Also resolve stale alerts."""
+    from datetime import datetime, timezone
+
     new_alerts = await check_visit_alerts(patient_visit_id, study_id, db)
+    new_titles = {a.title for a in new_alerts}
+
+    # Resolve old alerts that no longer apply
+    existing_result = await db.execute(
+        select(Alert).where(
+            Alert.patient_visit_id == patient_visit_id,
+            Alert.status == "open",
+        )
+    )
+    existing_alerts = existing_result.scalars().all()
+    for existing in existing_alerts:
+        if existing.title not in new_titles:
+            existing.status = "resolved"
+            existing.resolved_at = datetime.now(timezone.utc)
+
+    # Add new alerts (avoid duplicates)
     for alert in new_alerts:
-        # Check if similar alert already exists (avoid duplicates)
-        existing = await db.execute(
+        already = await db.execute(
             select(Alert).where(
                 Alert.patient_visit_id == patient_visit_id,
                 Alert.alert_type == alert.alert_type,
@@ -107,7 +124,8 @@ async def run_alerts_for_visit(patient_visit_id: UUID, study_id: UUID, db: Async
                 Alert.status == "open",
             )
         )
-        if not existing.scalar_one_or_none():
+        if not already.scalar_one_or_none():
             db.add(alert)
+
     await db.flush()
     return new_alerts
