@@ -1,5 +1,6 @@
 import json
 import anthropic
+import httpx
 from app.core.config import settings
 
 PROTOCOL_PARSE_PROMPT = """You are a clinical trial protocol analyst. You receive the full text of a clinical study protocol.
@@ -28,10 +29,10 @@ You MUST return valid JSON matching this exact schema:
   ],
   "screening_criteria": {
     "inclusion": [
-      {"title": "Age >= 18 years", "description": "Detailed description", "source_excerpt": "exact quote from protocol"}
+      {"title": "Age >= 18 years", "description": "Brief description"}
     ],
     "exclusion": [
-      {"title": "...", "description": "...", "source_excerpt": "..."}
+      {"title": "...", "description": "..."}
     ]
   }
 }
@@ -40,9 +41,10 @@ Rules:
 - Extract EVERY visit mentioned in the protocol, in chronological order.
 - For each visit, extract ALL procedures/assessments listed.
 - Mark a procedure as is_critical if missing it would constitute a protocol deviation.
-- For screening criteria, include the verbatim source_excerpt from the protocol.
+- Keep descriptions SHORT (one sentence max).
 - If a time window is specified (e.g., "Day 14 +/- 3 days"), extract window_min_days and window_max_days.
 - Do NOT invent criteria or procedures not present in the protocol.
+- Do NOT include verbatim quotes from the protocol.
 - Return ONLY the JSON, no additional text."""
 
 ICF_PARSE_PROMPT = """You are a clinical trial documentation analyst. You receive the text of an Informed Consent Form (ICF/FCI).
@@ -91,18 +93,23 @@ class LLMService:
     """Abstraction layer for LLM calls. Only this class communicates with the Claude API."""
 
     def __init__(self):
-        self.client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+        self.client = anthropic.Anthropic(
+            api_key=settings.ANTHROPIC_API_KEY,
+            timeout=httpx.Timeout(300.0, connect=10.0),
+        )
         self.model = "claude-sonnet-4-20250514"
 
     def parse_protocol(self, document_text: str) -> dict:
         response = self.client.messages.create(
             model=self.model,
-            max_tokens=8192,
+            max_tokens=32768,
             system=PROTOCOL_PARSE_PROMPT,
             messages=[
                 {"role": "user", "content": f"Here is the protocol text:\n\n{document_text}"}
             ],
         )
+        if response.stop_reason == "max_tokens":
+            raise ValueError("AI response was truncated (too long). Try with a shorter document.")
         return self._extract_json(response.content[0].text)
 
     def parse_icf(self, document_text: str) -> dict:
@@ -159,19 +166,25 @@ Rules:
     def _extract_json(self, text: str) -> dict:
         """Extract JSON from LLM response, handling markdown wrapping and preamble text."""
         text = text.strip()
-        # Remove markdown code fences
+        # Remove markdown code fences: find content between ```json ... ``` or ``` ... ```
         if "```json" in text:
             text = text.split("```json", 1)[1]
         elif "```" in text:
             text = text.split("```", 1)[1]
-        if text.endswith("```"):
-            text = text[:-3]
-        if "```" in text:
-            text = text.split("```")[0]
-        # If still not starting with {, find the first {
+        # Remove trailing ``` (may have whitespace/newlines)
         text = text.strip()
+        if text.endswith("```"):
+            text = text[:-3].strip()
+        # If there's still a ``` left, take everything before it
+        if "```" in text:
+            text = text.split("```")[0].strip()
+        # Find the JSON object
         if not text.startswith("{") and "{" in text:
             text = text[text.index("{"):]
+        # Find the last } to avoid trailing garbage
+        last_brace = text.rfind("}")
+        if last_brace != -1:
+            text = text[:last_brace + 1]
         return json.loads(text.strip())
 
 

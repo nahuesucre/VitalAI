@@ -57,6 +57,8 @@ class PatientVisitResponse(BaseModel):
     id: UUID
     patient_id: UUID
     study_visit_id: UUID
+    visit_name: str | None = None
+    visit_code: str | None = None
     visit_date: date | None
     visit_status: str
     notes: str | None
@@ -85,4 +87,9 @@ class TaskResponse(BaseModel):
 
 class TaskUpdate(BaseModel):
     status: str  # pending, completed, not_applicable, missing
+    notes: str | None = None
+
+
+class PatientVisitUpdate(BaseModel):
+    visit_status: str  # planned, in_progress, completed
     notes: str | None = None

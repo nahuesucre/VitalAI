@@ -93,6 +93,8 @@ export interface PatientVisit {
   id: string;
   patient_id: string;
   study_visit_id: string;
+  visit_name: string | null;
+  visit_code: string | null;
   visit_date: string | null;
   visit_status: string;
   notes: string | null;

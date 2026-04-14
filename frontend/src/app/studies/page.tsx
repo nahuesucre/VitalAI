@@ -6,6 +6,12 @@ import { useApp } from "@/contexts/AppContext";
 import { api } from "@/lib/api";
 import type { Study } from "@/types";
 
+const STUDY_TYPE_KEYS: Record<string, string> = {
+  interventional_drug: "studies.typeInterventionalDrug",
+  interventional_device: "studies.typeInterventionalDevice",
+  observational: "studies.typeObservational",
+};
+
 export default function StudiesPage() {
   const [studies, setStudies] = useState<Study[]>([]);
   const [showCreate, setShowCreate] = useState(false);
@@ -17,6 +23,13 @@ export default function StudiesPage() {
   useEffect(() => {
     api<Study[]>("/studies/").then(setStudies).catch(() => {});
   }, []);
+
+  async function handleDelete(studyId: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!confirm(t("studies.confirmDelete"))) return;
+    await api(`/studies/${studyId}`, { method: "DELETE" });
+    setStudies(prev => prev.filter(s => s.id !== studyId));
+  }
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -88,6 +101,18 @@ export default function StudiesPage() {
                   </div>
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1.5">{t("studies.studyType")}</label>
+                  <select
+                    value={form.study_type}
+                    onChange={(e) => setForm({ ...form, study_type: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent"
+                  >
+                    <option value="interventional_drug">{t("studies.typeInterventionalDrug")}</option>
+                    <option value="interventional_device">{t("studies.typeInterventionalDevice")}</option>
+                    <option value="observational">{t("studies.typeObservational")}</option>
+                  </select>
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-gray-600 mb-1.5">{t("studies.description")}</label>
                   <textarea
                     value={form.description}
@@ -139,17 +164,26 @@ export default function StudiesPage() {
                   <div>
                     <h4 className="text-sm font-semibold text-gray-800">{study.name}</h4>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      {t("studies.studyPhaseType")} {study.phase} — {study.study_type} · {t("studies.sponsoredBy")} {study.sponsor}
+                      {t("studies.studyPhaseType")} {study.phase} — {t(STUDY_TYPE_KEYS[study.study_type || ""] || study.study_type || "")} · {t("studies.sponsoredBy")} {study.sponsor}
                     </p>
                   </div>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${
-                  study.status === "active"
-                    ? "bg-sky-50 text-sky-600 border-sky-200"
-                    : "bg-gray-50 text-gray-500 border-gray-200"
-                }`}>
-                  {study.status === "active" ? t("studies.activeRecruiting") : study.status === "draft" ? t("studies.draft") : study.status}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${
+                    study.status === "active"
+                      ? "bg-sky-50 text-sky-600 border-sky-200"
+                      : "bg-gray-50 text-gray-500 border-gray-200"
+                  }`}>
+                    {study.status === "active" ? t("studies.activeRecruiting") : study.status === "draft" ? t("studies.draft") : study.status}
+                  </span>
+                  <button
+                    onClick={(e) => handleDelete(study.id, e)}
+                    className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                    title={t("common.delete")}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                  </button>
+                </div>
               </div>
             ))}
           </div>

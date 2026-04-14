@@ -6,9 +6,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from app.db.session import get_db
 from app.models.user import User
-from app.models.patient import PatientVisit, PatientVisitTask
+from app.models.patient import Patient, PatientVisit, PatientVisitTask
 from app.models.study import StudyVisit, StudyProcedure
-from app.schemas.patient import PatientVisitCreate, PatientVisitResponse, TaskResponse, TaskUpdate
+from app.schemas.patient import PatientVisitCreate, PatientVisitResponse, PatientVisitUpdate, TaskResponse, TaskUpdate
 from app.core.deps import get_current_user
 
 router = APIRouter(prefix="/patients/{patient_id}/visits", tags=["visits"])
@@ -21,6 +21,41 @@ async def create_visit(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    # Sequential visit enforcement
+    target_visit_result = await db.execute(
+        select(StudyVisit).where(StudyVisit.id == data.study_visit_id)
+    )
+    target_study_visit = target_visit_result.scalar_one_or_none()
+    if not target_study_visit:
+        raise HTTPException(status_code=404, detail="Study visit not found")
+
+    if target_study_visit.order_index > 1:
+        prior_visits_result = await db.execute(
+            select(StudyVisit).where(
+                StudyVisit.study_id == target_study_visit.study_id,
+                StudyVisit.order_index < target_study_visit.order_index,
+            )
+        )
+        prior_study_visits = prior_visits_result.scalars().all()
+        prior_visit_ids = [v.id for v in prior_study_visits]
+
+        if prior_visit_ids:
+            patient_visits_result = await db.execute(
+                select(PatientVisit).where(
+                    PatientVisit.patient_id == patient_id,
+                    PatientVisit.study_visit_id.in_(prior_visit_ids),
+                )
+            )
+            patient_visits = patient_visits_result.scalars().all()
+            completed_ids = {pv.study_visit_id for pv in patient_visits if pv.visit_status == "completed"}
+
+            for pv_id in prior_visit_ids:
+                if pv_id not in completed_ids:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Debe completar las visitas anteriores antes de crear esta visita."
+                    )
+
     visit = PatientVisit(
         patient_id=patient_id,
         study_visit_id=data.study_visit_id,
@@ -55,7 +90,7 @@ async def create_visit(
     result = await db.execute(
         select(PatientVisit)
         .where(PatientVisit.id == visit.id)
-        .options(selectinload(PatientVisit.tasks).selectinload(PatientVisitTask.study_procedure))
+        .options(selectinload(PatientVisit.tasks).selectinload(PatientVisitTask.study_procedure), selectinload(PatientVisit.study_visit))
     )
     visit = result.scalar_one()
     return _format_visit(visit)
@@ -70,7 +105,7 @@ async def list_visits(
     result = await db.execute(
         select(PatientVisit)
         .where(PatientVisit.patient_id == patient_id)
-        .options(selectinload(PatientVisit.tasks).selectinload(PatientVisitTask.study_procedure))
+        .options(selectinload(PatientVisit.tasks).selectinload(PatientVisitTask.study_procedure), selectinload(PatientVisit.study_visit))
         .order_by(PatientVisit.created_at)
     )
     visits = result.scalars().all()
@@ -87,12 +122,59 @@ async def get_visit(
     result = await db.execute(
         select(PatientVisit)
         .where(PatientVisit.id == visit_id, PatientVisit.patient_id == patient_id)
-        .options(selectinload(PatientVisit.tasks).selectinload(PatientVisitTask.study_procedure))
+        .options(selectinload(PatientVisit.tasks).selectinload(PatientVisitTask.study_procedure), selectinload(PatientVisit.study_visit))
     )
     visit = result.scalar_one_or_none()
     if not visit:
         raise HTTPException(status_code=404, detail="Visit not found")
     return _format_visit(visit)
+
+
+@router.put("/{visit_id}", response_model=PatientVisitResponse)
+async def update_visit(
+    patient_id: UUID,
+    visit_id: UUID,
+    data: PatientVisitUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(PatientVisit)
+        .where(PatientVisit.id == visit_id, PatientVisit.patient_id == patient_id)
+        .options(selectinload(PatientVisit.tasks).selectinload(PatientVisitTask.study_procedure), selectinload(PatientVisit.study_visit))
+    )
+    visit = result.scalar_one_or_none()
+    if not visit:
+        raise HTTPException(status_code=404, detail="Visit not found")
+
+    visit.visit_status = data.visit_status
+    if data.notes is not None:
+        visit.notes = data.notes
+
+    if data.visit_status == "completed":
+        patient_result = await db.execute(select(Patient).where(Patient.id == patient_id))
+        patient = patient_result.scalar_one()
+        patient.enrollment_status = "enrolled"
+
+    await db.flush()
+    await db.refresh(visit)
+    return _format_visit(visit)
+
+
+@router.delete("/{visit_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_visit(
+    patient_id: UUID,
+    visit_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(PatientVisit).where(PatientVisit.id == visit_id, PatientVisit.patient_id == patient_id)
+    )
+    visit = result.scalar_one_or_none()
+    if not visit:
+        raise HTTPException(status_code=404, detail="Visit not found")
+    await db.delete(visit)
 
 
 @router.put("/{visit_id}/tasks/{task_id}", response_model=TaskResponse)
@@ -149,10 +231,13 @@ def _format_visit(visit: PatientVisit) -> PatientVisitResponse:
             notes=t.notes,
             completed_at=t.completed_at,
         ))
+    sv = visit.study_visit if hasattr(visit, "study_visit") and visit.study_visit else None
     return PatientVisitResponse(
         id=visit.id,
         patient_id=visit.patient_id,
         study_visit_id=visit.study_visit_id,
+        visit_name=sv.visit_name if sv else None,
+        visit_code=sv.visit_code if sv else None,
         visit_date=visit.visit_date,
         visit_status=visit.visit_status,
         notes=visit.notes,

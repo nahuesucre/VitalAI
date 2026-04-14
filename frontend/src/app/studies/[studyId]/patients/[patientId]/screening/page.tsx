@@ -27,13 +27,22 @@ export default function ScreeningPage() {
 
   async function updateItem(itemId: string, status: string) {
     setSaving(itemId);
-    await api(`/patients/${patientId}/screening/${itemId}`, {
-      method: "PUT",
-      body: JSON.stringify({ status }),
-    });
-    await loadScreening();
-    const p = await api<Patient>(`/studies/${studyId}/patients/${patientId}`);
-    setPatient(p);
+    // Optimistic update
+    setItems(prev => prev.map(i => i.id === itemId ? { ...i, status } : i));
+    try {
+      await api(`/patients/${patientId}/screening/${itemId}`, {
+        method: "PUT",
+        body: JSON.stringify({ status }),
+      });
+      const [screeningData, patientData] = await Promise.all([
+        api<ScreeningItem[]>(`/patients/${patientId}/screening/`),
+        api<Patient>(`/studies/${studyId}/patients/${patientId}`),
+      ]);
+      setItems(screeningData);
+      setPatient(patientData);
+    } catch {
+      await loadScreening();
+    }
     setSaving(null);
   }
 
@@ -122,23 +131,23 @@ export default function ScreeningPage() {
                 </div>
                 <div className="bg-white border border-sky-100 rounded-2xl divide-y divide-sky-50 shadow-sm">
                   {exclusionItems.map((item) => (
-                    <div key={item.id} className={`px-5 py-4 flex items-center justify-between ${item.status === "met" ? "bg-amber-50/50" : ""}`}>
+                    <div key={item.id} className={`px-5 py-4 flex items-center justify-between ${item.status === "met" ? "bg-red-50/50" : ""}`}>
                       <span className="text-sm text-gray-700 flex-1 pr-4">{item.criterion_name}</span>
                       <div className="flex gap-1.5">
-                        {(["met", "not_met", "unknown"] as const).map((s) => (
+                        {(["not_met", "met", "unknown"] as const).map((s) => (
                           <button
                             key={s}
                             onClick={() => updateItem(item.id, s)}
                             disabled={saving === item.id}
                             className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
                               item.status === s
-                                ? s === "met" ? "bg-green-500 text-white border-green-500" :
-                                  s === "not_met" ? "bg-red-500 text-white border-red-500" :
+                                ? s === "not_met" ? "bg-green-500 text-white border-green-500" :
+                                  s === "met" ? "bg-red-500 text-white border-red-500" :
                                   "bg-gray-200 text-gray-700 border-gray-300"
                                 : "bg-white text-gray-500 border-gray-200 hover:bg-sky-50 hover:border-sky-200"
                             }`}
                           >
-                            {s === "met" ? t("screening.met") : s === "not_met" ? t("screening.notMet") : t("screening.pendingStatus")}
+                            {s === "not_met" ? t("screening.exclusionNotMet") : s === "met" ? t("screening.exclusionMet") : t("screening.pendingStatus")}
                           </button>
                         ))}
                       </div>

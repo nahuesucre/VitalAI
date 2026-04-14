@@ -4,7 +4,20 @@ import { useParams, useRouter } from "next/navigation";
 import AppLayout from "@/components/layout/AppLayout";
 import { useApp } from "@/contexts/AppContext";
 import { api } from "@/lib/api";
-import type { Study, StudyDocument, StudyVisit, StudyRule, Patient } from "@/types";
+import type { Study, StudyDocument, StudyVisit, StudyRule, Patient, PatientVisit } from "@/types";
+
+const STUDY_TYPE_KEYS: Record<string, string> = {
+  interventional_drug: "studies.typeInterventionalDrug",
+  interventional_device: "studies.typeInterventionalDevice",
+  observational: "studies.typeObservational",
+};
+
+const PROCESSING_STATUS_KEYS: Record<string, string> = {
+  completed: "studies.statusProcessed",
+  processing: "studies.statusProcessing",
+  failed: "studies.statusFailed",
+  pending: "studies.statusPending",
+};
 
 type Tab = "documents" | "structure" | "patients";
 
@@ -23,6 +36,7 @@ export default function StudyDetailPage() {
   const [confirming, setConfirming] = useState(false);
   const [showCreatePatient, setShowCreatePatient] = useState(false);
   const [patientForm, setPatientForm] = useState({ subject_code: "", sex: "M", birth_year: 1980 });
+  const [patientVisitsMap, setPatientVisitsMap] = useState<Record<string, PatientVisit[]>>({});
 
   useEffect(() => {
     if (!studyId) return;
@@ -42,7 +56,16 @@ export default function StudyDetailPage() {
     } catch {}
   }
   async function loadPatients() {
-    try { setPatients(await api<Patient[]>(`/studies/${studyId}/patients/`)); } catch {}
+    try {
+      const pts = await api<Patient[]>(`/studies/${studyId}/patients/`);
+      setPatients(pts);
+      // Load visits for each patient
+      const map: Record<string, PatientVisit[]> = {};
+      await Promise.all(pts.map(async (p) => {
+        try { map[p.id] = await api<PatientVisit[]>(`/patients/${p.id}/visits/`); } catch {}
+      }));
+      setPatientVisitsMap(map);
+    } catch {}
   }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>, docType: string) {
@@ -114,7 +137,7 @@ export default function StudyDetailPage() {
             </div>
             <div>
               <h2 className="text-xl font-bold text-gray-800">{study.name}</h2>
-              <p className="text-sm text-gray-400">{t("studies.studyPhaseType")} {study.phase} — {study.study_type} · {t("studies.sponsoredBy")} {study.sponsor}</p>
+              <p className="text-sm text-gray-400">{t("studies.studyPhaseType")} {study.phase} — {t(STUDY_TYPE_KEYS[study.study_type || ""] || study.study_type || "")} · {t("studies.sponsoredBy")} {study.sponsor}</p>
             </div>
           </div>
           <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${statusBadge}`}>
@@ -161,14 +184,14 @@ export default function StudyDetailPage() {
                     doc.processing_status === "processing" ? "bg-sky-50 text-sky-600" :
                     doc.processing_status === "failed" ? "bg-red-50 text-red-700" :
                     "bg-gray-50 text-gray-500"
-                  }`}>{doc.processing_status}</span>
-                  {doc.processing_status === "pending" && (
+                  }`}>{t(PROCESSING_STATUS_KEYS[doc.processing_status] || doc.processing_status)}</span>
+                  {(doc.processing_status === "pending" || doc.processing_status === "failed") && (
                     <button
                       onClick={() => handleParse(doc.id)}
                       disabled={!!parsing}
-                      className="px-3 py-1.5 bg-gradient-to-r from-sky-400 to-cyan-500 hover:from-sky-500 hover:to-cyan-600 disabled:opacity-60 text-white rounded-lg text-xs font-semibold transition-all cursor-pointer"
+                      className={`px-3 py-1.5 ${doc.processing_status === "failed" ? "bg-gradient-to-r from-red-400 to-red-500 hover:from-red-500 hover:to-red-600" : "bg-gradient-to-r from-sky-400 to-cyan-500 hover:from-sky-500 hover:to-cyan-600"} disabled:opacity-60 text-white rounded-lg text-xs font-semibold transition-all cursor-pointer`}
                     >
-                      {parsing === doc.id ? t("common.processing") : t("detail.processAI")}
+                      {parsing === doc.id ? t("common.processing") : doc.processing_status === "failed" ? t("detail.retryAI") : t("detail.processAI")}
                     </button>
                   )}
                 </div>
@@ -318,6 +341,7 @@ export default function StudyDetailPage() {
                       <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{t("detail.patientId")}</th>
                       <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{t("detail.screening")}</th>
                       <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{t("detail.status")}</th>
+                      <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{t("detail.visits")}</th>
                       <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{t("detail.date")}</th>
                       <th className="px-5 py-3"></th>
                     </tr>
@@ -335,6 +359,14 @@ export default function StudyDetailPage() {
                           }`}>{p.screening_status === "eligible" ? t("detail.eligible") : p.screening_status === "not_eligible" ? t("detail.notEligible") : p.screening_status === "in_progress" ? t("detail.inProgress") : t("detail.pending")}</span>
                         </td>
                         <td className="px-5 py-4 text-sm text-gray-500 capitalize">{p.enrollment_status}</td>
+                        <td className="px-5 py-4 text-sm text-gray-500">
+                          {(() => {
+                            const pv = patientVisitsMap[p.id] || [];
+                            if (pv.length === 0) return <span className="text-gray-300">{t("detail.noVisits")}</span>;
+                            const done = pv.filter(v => v.visit_status === "completed").length;
+                            return <span>{done}/{pv.length} {t("detail.visitsCompleted")}</span>;
+                          })()}
+                        </td>
                         <td className="px-5 py-4 text-sm text-gray-400">{new Date(p.created_at).toLocaleDateString(locale === "es" ? "es-AR" : "en-US")}</td>
                         <td className="px-5 py-4 text-right">
                           <span className="text-sky-500 text-sm font-medium">{t("detail.view")}</span>

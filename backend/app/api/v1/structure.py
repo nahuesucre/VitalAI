@@ -5,7 +5,7 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import selectinload
 from app.db.session import get_db
 from app.models.user import User
-from app.models.study import StudyVisit, StudyProcedure, StudyRule
+from app.models.study import Study, StudyVisit, StudyProcedure, StudyRule
 from app.schemas.study import (
     VisitResponse, VisitUpdate,
     ProcedureResponse, ProcedureUpdate,
@@ -161,4 +161,11 @@ async def confirm_structure(
     await db.execute(
         update(StudyRule).where(StudyRule.study_id == study_id).values(is_confirmed=True)
     )
+
+    # Set study status to active
+    study_result = await db.execute(select(Study).where(Study.id == study_id))
+    study = study_result.scalar_one_or_none()
+    if study and study.status == "draft":
+        study.status = "active"
+
     return {"message": "Structure confirmed successfully"}

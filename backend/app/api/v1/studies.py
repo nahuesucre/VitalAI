@@ -75,6 +75,19 @@ async def update_study(
     return study
 
 
+@router.delete("/{study_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_study(
+    study_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = await db.execute(select(Study).where(Study.id == study_id))
+    study = result.scalar_one_or_none()
+    if not study:
+        raise HTTPException(status_code=404, detail="Study not found")
+    await db.delete(study)
+
+
 # --- Documents ---
 
 @router.post("/{study_id}/documents", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
