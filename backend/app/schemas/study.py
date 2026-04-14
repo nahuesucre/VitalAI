@@ -44,7 +44,6 @@ class DocumentResponse(BaseModel):
     document_type: str
     title: str | None
     version: str | None
-    file_path: str | None
     processing_status: str
     created_at: datetime
 

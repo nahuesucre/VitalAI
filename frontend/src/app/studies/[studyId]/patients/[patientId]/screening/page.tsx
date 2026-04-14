@@ -16,7 +16,7 @@ export default function ScreeningPage() {
     if (!patientId) return;
     api<Patient>(`/studies/${studyId}/patients/${patientId}`).then(setPatient);
     loadScreening();
-  }, [studyId, patientId]);
+  }, [studyId, patientId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadScreening() {
     const data = await api<ScreeningItem[]>(`/patients/${patientId}/screening/`);
@@ -30,7 +30,6 @@ export default function ScreeningPage() {
       body: JSON.stringify({ status }),
     });
     await loadScreening();
-    // Reload patient to get updated screening_status
     const p = await api<Patient>(`/studies/${studyId}/patients/${patientId}`);
     setPatient(p);
     setSaving(null);
@@ -49,25 +48,30 @@ export default function ScreeningPage() {
         {/* Header */}
         <div className="flex items-start justify-between mb-6">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-teal-50 rounded-xl flex items-center justify-center">
-              <svg className="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>
+            <div className="w-12 h-12 bg-gradient-to-br from-sky-100 to-cyan-200 rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Screening — {patient.subject_code}</h2>
-              <p className="text-sm text-gray-500">Visita 1 — Screening</p>
+              <h2 className="text-xl font-bold text-gray-800">Screening — {patient.subject_code}</h2>
+              <p className="text-sm text-gray-400">Visita 1 — Screening</p>
             </div>
           </div>
           <div className="flex gap-2">
-            {pendingCount > 0 && <span className="px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-xs font-medium">{pendingCount} pendientes</span>}
-            {failCount > 0 && <span className="px-3 py-1 bg-red-50 text-red-700 border border-red-200 rounded-full text-xs font-medium">{failCount} no cumple</span>}
+            {pendingCount > 0 && <span className="px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-xs font-semibold">{pendingCount} pendientes</span>}
+            {failCount > 0 && <span className="px-3 py-1 bg-red-50 text-red-700 border border-red-200 rounded-full text-xs font-semibold">{failCount} no cumple</span>}
           </div>
         </div>
 
-        <button onClick={() => router.push(`/studies/${studyId}`)} className="text-sm text-teal-600 hover:text-teal-700 mb-6 inline-block">← Volver al estudio</button>
+        <button
+          onClick={() => router.push(`/studies/${studyId}`)}
+          className="text-sm text-sky-500 hover:text-sky-600 font-medium mb-6 inline-block transition-colors"
+        >
+          ← Volver al estudio
+        </button>
 
         {items.length === 0 ? (
-          <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
-            <p className="text-sm text-gray-500">No hay criterios de screening. Procesá el protocolo con IA primero.</p>
+          <div className="bg-white border border-sky-100 rounded-2xl p-12 text-center shadow-sm">
+            <p className="text-sm text-gray-400">No hay criterios de screening. Procesá el protocolo con IA primero.</p>
           </div>
         ) : (
           <>
@@ -75,25 +79,25 @@ export default function ScreeningPage() {
             {inclusionItems.length > 0 && (
               <div className="mb-8">
                 <div className="flex items-center gap-2 mb-4">
-                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                   <h3 className="font-semibold text-green-800">Criterios de Inclusión</h3>
                 </div>
-                <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
+                <div className="bg-white border border-sky-100 rounded-2xl divide-y divide-sky-50 shadow-sm">
                   {inclusionItems.map((item) => (
                     <div key={item.id} className={`px-5 py-4 flex items-center justify-between ${item.status === "not_met" ? "bg-amber-50/50" : ""}`}>
-                      <span className="text-sm text-gray-800 flex-1 pr-4">{item.criterion_name}</span>
+                      <span className="text-sm text-gray-700 flex-1 pr-4">{item.criterion_name}</span>
                       <div className="flex gap-1.5">
                         {(["met", "not_met", "unknown"] as const).map((s) => (
                           <button
                             key={s}
                             onClick={() => updateItem(item.id, s)}
                             disabled={saving === item.id}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
                               item.status === s
-                                ? s === "met" ? "bg-green-600 text-white border-green-600" :
-                                  s === "not_met" ? "bg-red-600 text-white border-red-600" :
+                                ? s === "met" ? "bg-green-500 text-white border-green-500" :
+                                  s === "not_met" ? "bg-red-500 text-white border-red-500" :
                                   "bg-gray-200 text-gray-700 border-gray-300"
-                                : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                                : "bg-white text-gray-500 border-gray-200 hover:bg-sky-50 hover:border-sky-200"
                             }`}
                           >
                             {s === "met" ? "Cumple" : s === "not_met" ? "No Cumple" : "Pendiente"}
@@ -110,26 +114,26 @@ export default function ScreeningPage() {
             {exclusionItems.length > 0 && (
               <div className="mb-8">
                 <div className="flex items-center gap-2 mb-4">
-                  <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                  <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
                   <h3 className="font-semibold text-red-800">Criterios de Exclusión</h3>
-                  <span className="text-xs text-gray-500">(marcar &quot;Cumple&quot; = el paciente NO presenta esta condición)</span>
+                  <span className="text-xs text-gray-400">(marcar &quot;Cumple&quot; = el paciente NO presenta esta condición)</span>
                 </div>
-                <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
+                <div className="bg-white border border-sky-100 rounded-2xl divide-y divide-sky-50 shadow-sm">
                   {exclusionItems.map((item) => (
                     <div key={item.id} className={`px-5 py-4 flex items-center justify-between ${item.status === "met" ? "bg-amber-50/50" : ""}`}>
-                      <span className="text-sm text-gray-800 flex-1 pr-4">{item.criterion_name}</span>
+                      <span className="text-sm text-gray-700 flex-1 pr-4">{item.criterion_name}</span>
                       <div className="flex gap-1.5">
                         {(["met", "not_met", "unknown"] as const).map((s) => (
                           <button
                             key={s}
                             onClick={() => updateItem(item.id, s)}
                             disabled={saving === item.id}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
                               item.status === s
-                                ? s === "met" ? "bg-green-600 text-white border-green-600" :
-                                  s === "not_met" ? "bg-red-600 text-white border-red-600" :
+                                ? s === "met" ? "bg-green-500 text-white border-green-500" :
+                                  s === "not_met" ? "bg-red-500 text-white border-red-500" :
                                   "bg-gray-200 text-gray-700 border-gray-300"
-                                : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                                : "bg-white text-gray-500 border-gray-200 hover:bg-sky-50 hover:border-sky-200"
                             }`}
                           >
                             {s === "met" ? "Cumple" : s === "not_met" ? "No Cumple" : "Pendiente"}
@@ -142,9 +146,20 @@ export default function ScreeningPage() {
               </div>
             )}
 
-            <button onClick={() => router.push(`/studies/${studyId}/patients/${patientId}/visits/new`)} className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-medium">
-              Guardar evaluación
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() => router.push(`/studies/${studyId}`)}
+                className="px-6 py-2.5 bg-gradient-to-r from-sky-400 to-cyan-500 hover:from-sky-500 hover:to-cyan-600 text-white rounded-xl text-sm font-semibold transition-all shadow-sm"
+              >
+                Volver al estudio
+              </button>
+              <button
+                onClick={() => router.push(`/studies/${studyId}/patients/${patientId}/visits/new`)}
+                className="px-6 py-2.5 border border-sky-400 text-sky-500 hover:bg-sky-50 rounded-xl text-sm font-semibold transition-colors"
+              >
+                Crear visita
+              </button>
+            </div>
           </>
         )}
       </div>

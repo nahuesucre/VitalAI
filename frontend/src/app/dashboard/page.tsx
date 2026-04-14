@@ -3,15 +3,28 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import AppLayout from "@/components/layout/AppLayout";
 import { api } from "@/lib/api";
-import type { Study, Alert } from "@/types";
+import type { Study, Alert, MetricsOverview } from "@/types";
 
 export default function DashboardPage() {
   const [studies, setStudies] = useState<Study[]>([]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [metrics, setMetrics] = useState<MetricsOverview | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    api<Study[]>("/studies/").then(setStudies).catch(() => {});
+    api<Study[]>("/studies/").then((s) => {
+      setStudies(s);
+      if (s.length > 0) {
+        // Load metrics and alerts from the first study
+        api<MetricsOverview>(`/studies/${s[0].id}/metrics/overview`).then(setMetrics).catch(() => {});
+        api<Alert[]>(`/studies/${s[0].id}/alerts/`).then((a) => setAlerts(a.filter(al => al.status === "open"))).catch(() => {});
+      }
+    }).catch(() => {});
   }, []);
+
+  const screeningCount = metrics?.patients_by_status?.["in_progress"] || 0;
+  const alertCount = metrics?.total_alerts_open || 0;
+  const visitCount = Object.values(metrics?.visits_by_status || {}).reduce((a, b) => a + b, 0);
 
   return (
     <AppLayout>
@@ -19,6 +32,7 @@ export default function DashboardPage() {
         <div className="mb-6">
           <h2 className="text-xl font-bold text-gray-800">Dashboard del Coordinador</h2>
           <p className="text-sm text-gray-400 mt-0.5">
+            {studies.length > 0 && `Estudio: ${studies[0].name} · `}
             Hoy: {new Date().toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" })}
           </p>
         </div>
@@ -28,8 +42,8 @@ export default function DashboardPage() {
           <div className="bg-white border border-sky-100 rounded-2xl p-5 flex items-start justify-between shadow-sm">
             <div>
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Pacientes en Screening</p>
-              <p className="text-3xl font-bold text-gray-800 mt-1">0</p>
-              <p className="text-xs text-gray-300 mt-1">Creá un estudio para empezar</p>
+              <p className="text-3xl font-bold text-gray-800 mt-1">{metrics?.total_patients || 0}</p>
+              <p className="text-xs text-gray-300 mt-1">{screeningCount > 0 ? `${screeningCount} en evaluación` : "Creá un estudio para empezar"}</p>
             </div>
             <div className="w-10 h-10 bg-gradient-to-br from-sky-100 to-sky-200 rounded-xl flex items-center justify-center">
               <svg className="w-5 h-5 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>
@@ -37,9 +51,9 @@ export default function DashboardPage() {
           </div>
           <div className="bg-white border border-sky-100 rounded-2xl p-5 flex items-start justify-between shadow-sm">
             <div>
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Visitas Activas Hoy</p>
-              <p className="text-3xl font-bold text-gray-800 mt-1">0</p>
-              <p className="text-xs text-gray-300 mt-1">Sin visitas programadas</p>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Visitas Activas</p>
+              <p className="text-3xl font-bold text-gray-800 mt-1">{visitCount}</p>
+              <p className="text-xs text-gray-300 mt-1">{metrics?.visits_by_status?.["completed"] || 0} completadas</p>
             </div>
             <div className="w-10 h-10 bg-gradient-to-br from-cyan-100 to-cyan-200 rounded-xl flex items-center justify-center">
               <svg className="w-5 h-5 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
@@ -48,8 +62,8 @@ export default function DashboardPage() {
           <div className="bg-white border border-sky-100 rounded-2xl p-5 flex items-start justify-between shadow-sm">
             <div>
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Alertas Críticas</p>
-              <p className="text-3xl font-bold text-gray-800 mt-1">0</p>
-              <p className="text-xs text-gray-300 mt-1">Sin alertas pendientes</p>
+              <p className="text-3xl font-bold text-gray-800 mt-1">{alertCount}</p>
+              <p className="text-xs text-gray-300 mt-1">{alertCount > 0 ? `${alerts.filter(a => a.severity === "high").length} sin resolver` : "Sin alertas pendientes"}</p>
             </div>
             <div className="w-10 h-10 bg-gradient-to-br from-amber-100 to-amber-200 rounded-xl flex items-center justify-center">
               <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
@@ -117,13 +131,28 @@ export default function DashboardPage() {
               <div className="px-5 py-4 border-b border-sky-50">
                 <h3 className="font-semibold text-gray-800">Alertas Recientes</h3>
               </div>
-              <div className="p-5">
-                <div className="text-center py-8">
-                  <div className="w-10 h-10 bg-sky-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <svg className="w-5 h-5 text-sky-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>
+              <div className="p-3">
+                {alerts.length === 0 ? (
+                  <div className="text-center py-8">
+                    <div className="w-10 h-10 bg-sky-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <svg className="w-5 h-5 text-sky-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>
+                    </div>
+                    <p className="text-sm text-gray-300">Sin alertas recientes</p>
                   </div>
-                  <p className="text-sm text-gray-300">Sin alertas recientes</p>
-                </div>
+                ) : (
+                  <div className="space-y-2">
+                    {alerts.slice(0, 5).map((alert) => (
+                      <div key={alert.id} className={`px-4 py-3 rounded-xl border-l-4 ${
+                        alert.severity === "high" ? "bg-red-50 border-red-400" :
+                        alert.severity === "medium" ? "bg-amber-50 border-amber-400" :
+                        "bg-sky-50 border-sky-400"
+                      }`}>
+                        <p className="text-sm font-medium text-gray-800">{alert.title}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{new Date(alert.created_at).toLocaleString("es-AR", { hour: "2-digit", minute: "2-digit" })}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
