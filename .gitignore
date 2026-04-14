@@ -32,6 +32,12 @@ npm-debug.log*
 # Notes (internal project notes, not for GitHub)
 notes/
 
+# Docker local overrides (each dev can have their own)
+docker-compose.override.yml
+
+# DB init scripts with sensitive data (keep generic ones committed)
+db/init/*.sql
+
 # Coverage
 coverage/
 .nyc_output/
