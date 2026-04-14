@@ -36,7 +36,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
-            <img src="/logo.png" alt="VitalAI" className="h-16 object-contain" />
+            <img src="/logo.png" alt="VitalAI" className="h-20 object-contain" />
           </div>
           <p className="text-gray-400 text-sm">Plataforma de operaciones clínicas con IA</p>
         </div>

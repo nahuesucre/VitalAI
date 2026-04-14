@@ -50,7 +50,12 @@
       "Bash(echo \"PID: $!\")",
       "Bash(docker compose:*)",
       "Bash(cmd.exe /c start http://localhost:3000)",
-      "Bash(cmd.exe /c start http://localhost:8000/docs)"
+      "Bash(cmd.exe /c start http://localhost:8000/docs)",
+      "Bash(grep:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(cmd.exe:*)"
     ]
   }
 }

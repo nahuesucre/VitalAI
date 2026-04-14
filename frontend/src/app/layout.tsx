@@ -8,7 +8,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "TrialFlow AI",
+  title: "VitalAI",
   description: "Plataforma de operaciones clínicas asistida por IA",
 };
 
@@ -19,7 +19,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className={`${inter.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col font-sans bg-gray-50 text-gray-900">
+      <body className="min-h-full flex flex-col font-sans bg-sky-50/60 text-gray-900">
         {children}
       </body>
     </html>

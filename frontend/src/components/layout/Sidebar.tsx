@@ -27,20 +27,9 @@ export default function Sidebar() {
   return (
     <aside className="w-56 bg-white border-r border-sky-100 min-h-screen flex flex-col shadow-sm">
       {/* Logo */}
-      <div className="px-5 py-5 border-b border-sky-100">
+      <div className="px-5 py-4 border-b border-sky-100">
         <div className="flex items-center gap-2.5">
-          {/* V mark */}
-          <svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="vmark" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#7dd3fc" />
-                <stop offset="60%" stopColor="#22d3ee" />
-                <stop offset="100%" stopColor="#0ea5e9" />
-              </linearGradient>
-            </defs>
-            <path d="M7 9 L20 31 L33 9" stroke="url(#vmark)" strokeWidth="5.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-            <path d="M28 9 C36 9 36 20 28 20 C20 20 20 9 28 9" stroke="url(#vmark)" strokeWidth="3.5" strokeLinecap="round" fill="none"/>
-          </svg>
+          <img src="/logo-mark.png" alt="VitalAI" className="h-8 w-8 object-contain" />
           <span className="text-lg font-bold tracking-tight">
             <span className="text-sky-400">Vital</span><span className="text-sky-600 font-black">AI</span>
           </span>
