@@ -14,3 +14,12 @@ async def get_db():
         except Exception:
             await session.rollback()
             raise
+
+
+async def init_db():
+    """Create all tables. Call on startup."""
+    from app.db.base import Base
+    # Import all models so they register with Base
+    from app.models import user, study, patient, alert  # noqa
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)

@@ -3,8 +3,8 @@ from typing import List
 
 
 class Settings(BaseSettings):
-    # Database
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/postgres"
+    # Database — local PostgreSQL for dev, Supabase for prod
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:Hackathon@localhost:5432/trialflow"
 
     # Supabase
     SUPABASE_URL: str = ""

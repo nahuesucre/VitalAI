@@ -1,8 +1,7 @@
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import String, Text, DateTime, ForeignKey
+from sqlalchemy import String, Text, DateTime, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.dialects.postgresql import JSONB
 from app.db.base import Base
 
 
@@ -50,7 +49,7 @@ class AuditLog(Base):
     entity_type: Mapped[str] = mapped_column(String(100), nullable=False)
     entity_id: Mapped[uuid.UUID | None] = mapped_column()
     action: Mapped[str] = mapped_column(String(100), nullable=False)
-    payload_json: Mapped[dict | None] = mapped_column(JSONB)
+    payload_json: Mapped[dict | None] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )

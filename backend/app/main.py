@@ -1,12 +1,26 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.v1 import auth, studies, structure, patients, screening, visits, alerts, metrics, chat
+from app.db.session import init_db
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Create tables on startup (for SQLite dev mode)
+    await init_db()
+    # Seed demo data
+    from app.db.seed import seed
+    await seed()
+    yield
+
 
 app = FastAPI(
     title="TrialFlow AI",
     description="Clinical trial operations platform powered by AI",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 # CORS
