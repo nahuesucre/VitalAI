@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -133,10 +134,11 @@ async def chat(
     context = "\n\n---\n\n".join(context_parts)
     history = [{"role": m.role, "content": m.content} for m in data.conversation_history]
 
-    response_text = llm_service.chat(
-        message=data.message,
-        context=context,
-        conversation_history=history,
+    response_text = await asyncio.to_thread(
+        llm_service.chat,
+        data.message,
+        context,
+        history,
     )
 
     return ChatResponse(response=response_text, context_used=context_labels)

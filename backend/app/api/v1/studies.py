@@ -92,9 +92,10 @@ async def upload_document(
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Study not found")
 
-    # Save file locally
+    # Save file locally (sanitize filename to prevent path traversal)
     os.makedirs(UPLOAD_DIR, exist_ok=True)
-    file_path = os.path.join(UPLOAD_DIR, f"{study_id}_{file.filename}")
+    safe_name = os.path.basename(file.filename or "document")
+    file_path = os.path.join(UPLOAD_DIR, f"{study_id}_{safe_name}")
     content = await file.read()
     with open(file_path, "wb") as f:
         f.write(content)

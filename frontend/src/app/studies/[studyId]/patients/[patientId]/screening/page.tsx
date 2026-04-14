@@ -142,9 +142,14 @@ export default function ScreeningPage() {
               </div>
             )}
 
-            <button onClick={() => router.push(`/studies/${studyId}/patients/${patientId}/visits/new`)} className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-medium">
-              Guardar evaluación
-            </button>
+            <div className="flex gap-3">
+              <button onClick={() => router.push(`/studies/${studyId}`)} className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-medium">
+                Volver al estudio
+              </button>
+              <button onClick={() => router.push(`/studies/${studyId}/patients/${patientId}/visits/new`)} className="px-6 py-2.5 border border-teal-600 text-teal-600 hover:bg-teal-50 rounded-lg text-sm font-medium">
+                Crear visita
+              </button>
+            </div>
           </>
         )}
       </div>

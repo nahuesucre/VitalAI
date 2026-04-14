@@ -72,11 +72,13 @@ async def get_metrics(
     )
     total_alerts_open = total_alerts_result.scalar() or 0
 
-    # Common missing procedures
+    # Common missing procedures (scoped to study)
     missing_result = await db.execute(
         select(StudyProcedure.procedure_name, func.count(PatientVisitTask.id))
         .join(PatientVisitTask, PatientVisitTask.study_procedure_id == StudyProcedure.id)
-        .where(PatientVisitTask.status == "missing")
+        .join(PatientVisit, PatientVisit.id == PatientVisitTask.patient_visit_id)
+        .join(Patient, Patient.id == PatientVisit.patient_id)
+        .where(PatientVisitTask.status == "missing", Patient.study_id == study_id)
         .group_by(StudyProcedure.procedure_name)
         .order_by(func.count(PatientVisitTask.id).desc())
         .limit(10)

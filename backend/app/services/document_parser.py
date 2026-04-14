@@ -1,6 +1,7 @@
 """Document parsing pipeline: PDF → text → section search → Claude → DB"""
 import os
 import re
+import asyncio
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -148,23 +149,22 @@ async def parse_document(doc_id: UUID, db: AsyncSession) -> dict:
         # Save full extracted text
         doc.extracted_text = text
 
-        # Parse with AI based on document type
+        # Parse with AI based on document type (run in thread to not block event loop)
         if doc.document_type == "protocol":
-            # Smart section extraction instead of dumping everything
             sections = extract_sections(text)
             focused_text = build_focused_prompt(sections, text)
-            parsed = llm_service.parse_protocol(focused_text)
+            parsed = await asyncio.to_thread(llm_service.parse_protocol, focused_text)
             await _save_protocol_extraction(parsed, doc.study_id, doc.id, db)
         elif doc.document_type == "icf":
             parsing_text = text[:50000]
-            parsed = llm_service.parse_icf(parsing_text)
+            parsed = await asyncio.to_thread(llm_service.parse_icf, parsing_text)
         elif doc.document_type == "ib":
             parsing_text = text[:50000]
-            parsed = llm_service.parse_ib(parsing_text)
+            parsed = await asyncio.to_thread(llm_service.parse_ib, parsing_text)
         else:
             sections = extract_sections(text)
             focused_text = build_focused_prompt(sections, text)
-            parsed = llm_service.parse_protocol(focused_text)
+            parsed = await asyncio.to_thread(llm_service.parse_protocol, focused_text)
             await _save_protocol_extraction(parsed, doc.study_id, doc.id, db)
 
         doc.processing_status = "completed"

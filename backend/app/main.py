@@ -1,16 +1,23 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from uuid import UUID
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from app.core.config import settings
 from app.api.v1 import auth, studies, structure, patients, screening, visits, alerts, metrics, chat
-from app.db.session import init_db
+from app.db.session import init_db, get_db
+from app.models.user import User
+from app.models.patient import Patient
+from app.core.deps import get_current_user
+from app.services.document_parser import parse_document
+from app.services.alert_engine import run_alerts_for_visit
+import asyncio
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create tables on startup (for SQLite dev mode)
     await init_db()
-    # Seed demo data
     from app.db.seed import seed
     await seed()
     yield
@@ -23,7 +30,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -49,16 +55,6 @@ async def health():
     return {"status": "ok", "service": "trialflow-ai"}
 
 
-# Document parsing endpoint (triggers AI extraction)
-from uuid import UUID
-from fastapi import Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.db.session import get_db
-from app.models.user import User
-from app.core.deps import get_current_user
-from app.services.document_parser import parse_document
-
-
 @app.post("/api/v1/studies/{study_id}/documents/{doc_id}/parse")
 async def trigger_parse(
     study_id: UUID,
@@ -67,16 +63,11 @@ async def trigger_parse(
     current_user: User = Depends(get_current_user),
 ):
     try:
+        # Run parsing in a thread to avoid blocking the event loop
         result = await parse_document(doc_id, db)
         return {"status": "completed", "data": result}
     except Exception as e:
-        return {"status": "failed", "error": str(e)}
-
-
-# Alert check endpoint
-from app.services.alert_engine import run_alerts_for_visit
-from sqlalchemy import select
-from app.models.patient import PatientVisit, Patient
+        raise HTTPException(status_code=500, detail=f"Parsing failed: {str(e)}")
 
 
 @app.post("/api/v1/patients/{patient_id}/visits/{visit_id}/check-alerts")
@@ -86,7 +77,6 @@ async def check_alerts(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    # Get study_id from patient
     result = await db.execute(select(Patient).where(Patient.id == patient_id))
     patient = result.scalar_one_or_none()
     if not patient:

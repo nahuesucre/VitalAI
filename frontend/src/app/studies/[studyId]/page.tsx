@@ -24,25 +24,23 @@ export default function StudyDetailPage() {
 
   useEffect(() => {
     if (!studyId) return;
-    api<Study>(`/studies/${studyId}`).then(setStudy);
+    api<Study>(`/studies/${studyId}`).then(setStudy).catch(() => {});
     loadDocs();
     loadStructure();
     loadPatients();
-  }, [studyId]);
+  }, [studyId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadDocs() {
-    const data = await api<StudyDocument[]>(`/studies/${studyId}/documents`);
-    setDocs(data);
+    try { setDocs(await api<StudyDocument[]>(`/studies/${studyId}/documents`)); } catch {}
   }
   async function loadStructure() {
-    const v = await api<StudyVisit[]>(`/studies/${studyId}/structure/visits`);
-    const r = await api<StudyRule[]>(`/studies/${studyId}/structure/rules`);
-    setVisits(v);
-    setRules(r);
+    try {
+      setVisits(await api<StudyVisit[]>(`/studies/${studyId}/structure/visits`));
+      setRules(await api<StudyRule[]>(`/studies/${studyId}/structure/rules`));
+    } catch {}
   }
   async function loadPatients() {
-    const p = await api<Patient[]>(`/studies/${studyId}/patients/`);
-    setPatients(p);
+    try { setPatients(await api<Patient[]>(`/studies/${studyId}/patients/`)); } catch {}
   }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>, docType: string) {
@@ -60,10 +58,17 @@ export default function StudyDetailPage() {
 
   async function handleParse(docId: string) {
     setParsing(docId);
-    await api(`/studies/${studyId}/documents/${docId}/parse`, { method: "POST" });
-    await loadStructure();
-    await loadDocs();
-    setParsing(null);
+    try {
+      await api(`/studies/${studyId}/documents/${docId}/parse`, { method: "POST" });
+      await loadStructure();
+      await loadDocs();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Error al procesar documento";
+      alert(`Error: ${msg}`);
+      await loadDocs();
+    } finally {
+      setParsing(null);
+    }
   }
 
   async function handleConfirm() {
