@@ -1,4 +1,4 @@
-# VitalAI (TrialFlow AI)
+# VitalAI
 
 **Transforming clinical trial documents into safe, guided, and measurable operations.**
 
@@ -58,7 +58,7 @@ It is **not** a chatbot for PDFs. It is a structured operations platform where A
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌──────────────┐
 │  Next.js +       │────▶│  FastAPI +       │────▶│  PostgreSQL  │
-│  React + TS      │◀────│  Python          │◀────│              │
+│  React + TS      │◀────│  Python          │◀────│  (Docker)    │
 │  Tailwind        │     │                  │     └──────────────┘
 │                  │     │  Claude API      │
 └─────────────────┘     │  (LLMService)    │     ┌──────────────┐
@@ -66,10 +66,10 @@ It is **not** a chatbot for PDFs. It is a structured operations platform where A
                         └─────────────────┘     └──────────────┘
 ```
 
-- **Frontend:** Next.js + React + TypeScript + Tailwind CSS
-- **Backend:** FastAPI + Python (all endpoints async)
-- **Database:** PostgreSQL (local or Supabase)
-- **AI:** Claude Sonnet via decoupled `LLMService` abstraction
+- **Frontend:** Next.js 16 + React 19 + TypeScript + Tailwind CSS 4
+- **Backend:** FastAPI + Python (fully async)
+- **Database:** PostgreSQL 16 (Docker)
+- **AI:** Claude Sonnet 4 via decoupled `LLMService` abstraction
 - **Auth:** JWT + bcrypt with role management (admin, coordinator, physician)
 
 ---
@@ -78,45 +78,98 @@ It is **not** a chatbot for PDFs. It is a structured operations platform where A
 
 ### Prerequisites
 
+- Docker & Docker Compose
 - Python 3.10+
 - Node.js 18+
-- PostgreSQL 15+
 - Anthropic API Key
 
-### Installation
+### 1. Clone and configure environment
 
 ```bash
 git clone https://github.com/nahuesucre/VitalAI.git
 cd VitalAI
-cp .env.example .env
-# Edit .env with your credentials
 ```
 
-#### Database
+Copy the root `.env` (used by Docker Compose):
 
 ```bash
-# Create the database
-psql -U postgres -c "CREATE DATABASE trialflow;"
+cp .env.example .env
 ```
 
-#### Backend
+Edit `.env` with your credentials:
+
+```env
+ANTHROPIC_API_KEY=sk-ant-api03-your-key-here
+POSTGRES_PASSWORD=your-password
+JWT_SECRET=your-jwt-secret
+```
+
+Create the **backend** `.env` (read by FastAPI):
+
+```bash
+cat > backend/.env << 'EOF'
+ANTHROPIC_API_KEY=sk-ant-api03-your-key-here
+DATABASE_URL=postgresql+asyncpg://vitalai:your-password@localhost:5433/vitalai
+JWT_SECRET=your-jwt-secret
+JWT_ALGORITHM=HS256
+JWT_EXPIRATION_MINUTES=480
+BACKEND_CORS_ORIGINS=http://localhost:3000
+EOF
+```
+
+Create the **frontend** `.env.local` (read by Next.js):
+
+```bash
+echo "NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1" > frontend/.env.local
+```
+
+> **Important:** The root `.env` configures Docker. The `backend/.env` configures FastAPI. The `frontend/.env.local` configures Next.js. All three are needed.
+
+### 2. Start the database
+
+```bash
+docker compose up -d
+```
+
+This starts PostgreSQL 16 on port **5433** (to avoid conflicts with local PostgreSQL installations).
+
+Verify it's running:
+
+```bash
+docker ps
+# Should show vitalai_db with status "Up ... (healthy)"
+```
+
+### 3. Start the backend
 
 ```bash
 cd backend
+
+# Create virtual environment (Python 3.10+ required)
+python -m venv venv
+
+# Activate it
+# On Windows:
+venv\Scripts\activate
+# On macOS/Linux:
+source venv/bin/activate
+
+# Install dependencies
 pip install -r requirements.txt
 
-# Server creates tables and seeds demo users on startup
+# Start the server
 uvicorn app.main:app --reload --port 8000
 ```
 
-Demo users (auto-created):
-| Email | Password | Role |
-|-------|----------|------|
-| admin@trialflow.ai | password123 | Admin |
-| coordinator@trialflow.ai | password123 | Coordinator |
-| doctor@trialflow.ai | password123 | Physician |
+On first startup, the backend automatically:
+- Creates all database tables
+- Seeds demo users (see below)
 
-#### Frontend
+API docs available at `http://localhost:8000/docs`
+
+### 4. Start the frontend
+
+In a new terminal:
 
 ```bash
 cd frontend
@@ -126,13 +179,21 @@ npm run dev
 
 Open `http://localhost:3000`
 
+### Demo Users
+
+| Email | Password | Role |
+|-------|----------|------|
+| admin@trialflow.ai | password123 | Admin |
+| coordinator@trialflow.ai | password123 | Coordinator |
+| doctor@trialflow.ai | password123 | Physician |
+
 ---
 
 ## Demo Flow
 
 1. **Login** as coordinator
 2. **Create a study** (e.g., RELIEHF)
-3. **Upload protocol PDF** (82 pages)
+3. **Upload protocol PDF**
 4. **AI extracts** visits, procedures, and screening criteria using smart section detection
 5. **Review the extracted structure** — visits timeline, procedures per visit, inclusion/exclusion criteria
 6. **Confirm the structure**
@@ -153,11 +214,11 @@ VitalAI/
 │   └── app/
 │       ├── main.py              # FastAPI entry + auto-migration + seed
 │       ├── core/                # config, security (JWT+bcrypt), deps
-│       ├── api/v1/              # All REST endpoints
+│       ├── api/v1/              # REST endpoints (auth, studies, patients, visits, chat...)
 │       ├── models/              # SQLAlchemy ORM models (14 tables)
 │       ├── schemas/             # Pydantic request/response schemas
 │       ├── services/
-│       │   ├── ai_service.py    # LLMService — only connection to Claude
+│       │   ├── ai_service.py    # LLMService — Claude API abstraction
 │       │   ├── document_parser.py # Smart section extraction + parsing pipeline
 │       │   └── alert_engine.py  # Rule-based deviation detection
 │       └── db/                  # Session, base, seed
@@ -167,12 +228,48 @@ VitalAI/
 │       ├── components/          # Layout, UI components
 │       ├── lib/                 # API client, auth helpers
 │       └── types/               # TypeScript interfaces
-├── supabase/
-│   ├── schema.sql               # Full DDL (14 tables)
-│   └── seed.sql                 # Initial roles
-├── docker-compose.yml           # PostgreSQL + dev setup
-└── .env.example
+├── docker-compose.yml           # PostgreSQL container
+├── docs/                        # Product documentation
+└── .env.example                 # Environment variables template
 ```
+
+---
+
+## API Endpoints
+
+### Authentication
+- `POST /api/v1/auth/login` — Login with email/password
+- `POST /api/v1/auth/register` — Register new user
+- `GET /api/v1/auth/me` — Current user profile
+
+### Studies
+- `POST /api/v1/studies/` — Create study
+- `GET /api/v1/studies/` — List studies
+- `GET /api/v1/studies/{id}` — Study details
+- `POST /api/v1/studies/{id}/documents` — Upload document (protocol/ICF/IB)
+- `POST /api/v1/studies/{id}/documents/{doc_id}/parse` — Trigger AI parsing
+
+### Study Structure
+- `GET /api/v1/studies/{id}/structure/visits` — Extracted visits & procedures
+- `GET /api/v1/studies/{id}/structure/rules` — Inclusion/exclusion criteria
+- `POST /api/v1/studies/{id}/structure/confirm` — Confirm structure
+
+### Patients
+- `POST /api/v1/studies/{id}/patients/` — Create patient
+- `GET /api/v1/studies/{id}/patients/` — List patients
+
+### Screening & Visits
+- `GET /api/v1/patients/{id}/screening/` — Screening criteria status
+- `PUT /api/v1/patients/{id}/screening/{item_id}` — Update criterion
+- `POST /api/v1/patients/{id}/visits/` — Create visit
+- `PUT /api/v1/patients/{id}/visits/{id}/tasks/{id}` — Update task status
+
+### Alerts & Metrics
+- `GET /api/v1/studies/{id}/alerts/` — List alerts
+- `GET /api/v1/studies/{id}/metrics/overview` — Dashboard metrics
+
+### Chat
+- `POST /api/v1/chat/` — AI copilot (context-aware)
 
 ---
 
@@ -188,7 +285,6 @@ VitalAI/
 - Contextual AI chat (grounded in documents + operational data)
 - Operational metrics dashboard
 - Role-based access (admin, coordinator, physician)
-- Basic audit logging
 
 ### Future Roadmap
 - Randomization
