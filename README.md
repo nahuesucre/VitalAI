@@ -8,20 +8,46 @@
 
 ## Why this matters
 
-Every year, thousands of clinical trials run across the world testing treatments that could save lives. Behind each trial, there are **coordinators and physicians** who must ensure that every patient is screened correctly, every visit happens on time, every procedure is completed, and every deviation is caught.
+Every year, over 300,000 clinical trials run worldwide, testing treatments that could save millions of lives. Behind each trial, there are **coordinators, physicians, sponsors, and regulators** — all depending on the accurate, timely execution of complex protocols.
 
-**They do all of this by reading 200-page PDF protocols and tracking everything manually.**
+**Today, that execution relies on reading 200-page PDF protocols and tracking everything manually.**
 
-This is not a minor inefficiency. It is a systemic risk:
+This is not a minor inefficiency. It is a **systemic, multi-billion dollar problem** that impacts every stakeholder in clinical research.
 
-- A coordinator misreads a protocol window and a **patient visit happens out of range** — the data point is invalidated.
-- A screening criterion is overlooked and an **ineligible patient is enrolled** — putting their safety at risk.
-- A critical lab test is forgotten during a visit and **nobody notices until the next audit**, weeks later.
-- Sites have **no way to measure** where their process breaks — they only find out when something goes wrong.
+### The human cost
 
-Clinical research is one of the most regulated, high-stakes environments in healthcare. Yet its operational layer — the day-to-day execution of the study — **has almost no technological support**. Coordinators rely on memory, experience, and paper checklists to manage complexity that grows with every protocol amendment.
+- A coordinator misreads a protocol time window and a **patient visit happens out of range** — the data point is invalidated and the patient may need to repeat the visit.
+- A screening criterion is overlooked and an **ineligible patient is enrolled** — putting their safety at risk and compromising the study's integrity.
+- A critical lab test is forgotten during a visit and **nobody notices until the next monitoring visit**, weeks later — triggering a protocol deviation finding.
+- A site has **no visibility into its own operational gaps** — problems are discovered only during audits, when the damage is already done.
 
-The cost of these gaps is real: **delayed trials, compromised data integrity, regulatory findings, and ultimately, risk to the patients the study is trying to help.**
+### The financial cost
+
+The numbers behind this problem are staggering:
+
+- Clinical trials cost between **USD $1.4M–$6.6M (Phase I)** and **USD $11.5M–$52.9M (Phase III)**, with median per-patient costs of **USD $41,117** and significantly higher in complex therapeutic areas like oncology.
+- A single protocol amendment in a Phase III trial costs a median of **USD $535,000 in direct expenses** and adds approximately **3 months** of delays. For Phase II, the median cost is **USD $141,000**. 57% of all protocols have at least one substantial amendment — and nearly half of those are deemed **avoidable** (Tufts CSDD).
+- **30–40% of trial failures** are attributed to problems within the protocol design and operational execution — many of which are preventable with better tooling at the site level.
+- Simplified protocols and reduced amendments alone could cut overall development costs by **22.2%**, according to U.S. Department of Health and Human Services research.
+
+### Who pays the price
+
+| Stakeholder | Impact |
+|-------------|--------|
+| **Coordinators** | Cognitive overload, burnout, manual tracking of hundreds of procedures across dozens of patients |
+| **Physicians / Investigators** | Time wasted searching protocols for answers, risk of making decisions based on incomplete information |
+| **Sponsors (Pharma/Biotech)** | Delayed timelines, increased costs, data quality issues that threaten regulatory submissions |
+| **CROs (Contract Research Orgs)** | Underperforming sites drain monitoring resources, site management becomes reactive instead of proactive |
+| **Regulators** | Protocol deviations, incomplete audit trails, findings that delay drug approvals |
+| **Patients** | The most vulnerable stakeholder — exposed to safety risks, unnecessary visits, and delays in access to potentially life-saving treatments |
+
+### Why the market is wide open
+
+The global clinical trial management systems (CTMS) market is valued at **$2.3 billion in 2025** and projected to reach **$7.3 billion by 2035** (CAGR ~12–15%). Yet existing solutions focus primarily on trial-level management for sponsors and CROs — **not on the day-to-day operational execution at the site level**.
+
+There is no widely adopted tool that takes a clinical protocol and converts it into a live, guided, auditable operational workflow for the people who actually run the trial: coordinators and investigators.
+
+This is not a generic management system. It is a **category-defining opportunity** in a space with high regulatory pressure, massive budgets, growing protocol complexity, and almost zero operational tooling at the point of care.
 
 ---
 
