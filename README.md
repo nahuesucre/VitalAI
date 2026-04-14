@@ -1,6 +1,8 @@
 # VitalAI
 
-**Turning clinical trial protocols into guided, measurable operations — so no patient falls through the cracks.**
+**Your protocol, always under control.**
+
+Turning clinical trial protocols into guided, measurable operations — so no patient falls through the cracks.
 
 > Built at the Anthropic Hackathon — Buenos Aires, April 2026
 
