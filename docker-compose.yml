@@ -6,8 +6,8 @@ services:
     env_file:
       - .env
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-vitalai}
-      POSTGRES_USER: ${POSTGRES_USER:-vitalai}
+      POSTGRES_DB: ${POSTGRES_DB:-trialflow}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "${DB_PORT:-5432}:5432"
@@ -15,7 +15,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d   # SQL scripts run on first start
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-vitalai} -d ${POSTGRES_DB:-vitalai}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-trialflow}"]
       interval: 10s
       timeout: 5s
       retries: 5

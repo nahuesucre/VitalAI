@@ -1,10 +1,14 @@
+from pathlib import Path
 from pydantic_settings import BaseSettings
 from typing import List
+
+# Root of the repo (VitalAI/), regardless of where uvicorn is invoked from
+_ROOT_ENV = Path(__file__).resolve().parent.parent.parent.parent / ".env"
 
 
 class Settings(BaseSettings):
     # Database — local PostgreSQL for dev, Supabase for prod
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:Hackathon@localhost:5432/trialflow"
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:changeme@localhost:5432/trialflow"
 
     # Supabase
     SUPABASE_URL: str = ""
@@ -12,7 +16,7 @@ class Settings(BaseSettings):
     SUPABASE_SERVICE_KEY: str = ""
 
     # JWT
-    JWT_SECRET: str = "change-this-secret-in-production"
+    JWT_SECRET: str = "dev-secret-change-in-prod"
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRATION_MINUTES: int = 480
 
@@ -26,9 +30,7 @@ class Settings(BaseSettings):
     def cors_origins(self) -> List[str]:
         return [origin.strip() for origin in self.BACKEND_CORS_ORIGINS.split(",")]
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = {"env_file": str(_ROOT_ENV), "case_sensitive": True, "extra": "ignore"}
 
 
 settings = Settings()

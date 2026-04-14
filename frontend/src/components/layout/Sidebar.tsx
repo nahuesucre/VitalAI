@@ -25,15 +25,29 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-56 bg-white border-r border-gray-200 min-h-screen flex flex-col">
-      <div className="px-5 py-5 border-b border-gray-100">
-        <div className="flex items-center gap-2">
-          <svg className="w-7 h-7 text-teal-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-            <path d="M4.5 12.75l6 6 9-13.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <aside className="w-56 bg-white border-r border-sky-100 min-h-screen flex flex-col shadow-sm">
+      {/* Logo */}
+      <div className="px-5 py-5 border-b border-sky-100">
+        <div className="flex items-center gap-2.5">
+          {/* V mark */}
+          <svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="vmark" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#7dd3fc" />
+                <stop offset="60%" stopColor="#22d3ee" />
+                <stop offset="100%" stopColor="#0ea5e9" />
+              </linearGradient>
+            </defs>
+            <path d="M7 9 L20 31 L33 9" stroke="url(#vmark)" strokeWidth="5.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+            <path d="M28 9 C36 9 36 20 28 20 C20 20 20 9 28 9" stroke="url(#vmark)" strokeWidth="3.5" strokeLinecap="round" fill="none"/>
           </svg>
-          <span className="text-lg font-bold text-gray-900">TrialFlow AI</span>
+          <span className="text-lg font-bold tracking-tight">
+            <span className="text-sky-400">Vital</span><span className="text-sky-600 font-black">AI</span>
+          </span>
         </div>
       </div>
+
+      {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5">
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
@@ -43,20 +57,22 @@ export default function Sidebar() {
               href={item.href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 isActive
-                  ? "bg-teal-50 text-teal-700"
-                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  ? "bg-sky-50 text-sky-700 border border-sky-100"
+                  : "text-gray-500 hover:text-gray-800 hover:bg-sky-50/60"
               }`}
             >
-              <span className={isActive ? "text-teal-600" : "text-gray-400"}>{item.icon}</span>
+              <span className={isActive ? "text-sky-500" : "text-gray-400"}>{item.icon}</span>
               {item.label}
             </Link>
           );
         })}
       </nav>
-      <div className="px-3 py-4 border-t border-gray-100">
+
+      {/* Footer */}
+      <div className="px-3 py-4 border-t border-sky-100">
         <button
           onClick={logout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-gray-500 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-gray-400 hover:text-gray-700 hover:bg-sky-50/60 rounded-lg transition-colors"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" /></svg>
           Cerrar sesión

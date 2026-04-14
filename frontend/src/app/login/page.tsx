@@ -25,17 +25,22 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 via-white to-gray-50">
-      <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-lg border border-gray-100">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 via-white to-cyan-50">
+      {/* Decorative blobs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-sky-100/60 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-cyan-100/60 rounded-full blur-3xl" />
+      </div>
+
+      <div className="relative w-full max-w-md p-8 bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-sky-100">
+        {/* Logo */}
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <svg className="w-8 h-8 text-teal-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-              <path d="M4.5 12.75l6 6 9-13.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            <h1 className="text-2xl font-bold text-gray-900">TrialFlow AI</h1>
+          <div className="flex items-center justify-center mb-4">
+            <img src="/logo.png" alt="VitalAI" className="h-16 object-contain" />
           </div>
-          <p className="text-gray-500 text-sm">Plataforma de operaciones clínicas</p>
+          <p className="text-gray-400 text-sm">Plataforma de operaciones clínicas con IA</p>
         </div>
+
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
@@ -43,7 +48,7 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent placeholder-gray-400"
+              className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent placeholder-gray-300 transition-shadow"
               required
             />
           </div>
@@ -53,24 +58,30 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent placeholder-gray-400"
+              className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent placeholder-gray-300 transition-shadow"
               required
             />
           </div>
           {error && (
-            <div className="px-4 py-2.5 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-600 text-sm">{error}</p>
+            <div className="px-4 py-2.5 bg-red-50 border border-red-100 rounded-xl">
+              <p className="text-red-500 text-sm">{error}</p>
             </div>
           )}
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 bg-teal-600 hover:bg-teal-700 disabled:bg-teal-300 text-white font-medium rounded-lg transition-colors"
+            className="w-full py-2.5 bg-gradient-to-r from-sky-400 to-cyan-500 hover:from-sky-500 hover:to-cyan-600 disabled:opacity-60 text-white font-semibold rounded-xl transition-all shadow-sm hover:shadow-md"
           >
-            {loading ? "Ingresando..." : "Ingresar"}
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                Ingresando...
+              </span>
+            ) : "Ingresar"}
           </button>
         </form>
-        <div className="mt-6 text-center text-xs text-gray-400">
+
+        <div className="mt-6 text-center text-xs text-gray-300">
           Demo: admin@trialflow.ai / password123
         </div>
       </div>
