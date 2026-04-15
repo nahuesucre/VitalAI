@@ -208,9 +208,9 @@ Open `http://localhost:3000`
 
 | Email | Password | Role |
 |-------|----------|------|
-| admin@vitalai.ai | password123 | Admin |
-| coordinator@vitalai.ai | password123 | Coordinator |
-| doctor@vitalai.ai | password123 | Physician |
+| admin@vitalai.com | password123 | Admin |
+| coordinator@vitalai.com | password123 | Coordinator |
+| doctor@vitalai.com | password123 | Physician |
 
 ---
 

@@ -1,5 +1,5 @@
 -- ============================================================
--- TrialFlow AI — Database Schema
+-- VitalAI — Database Schema
 -- Run this in Supabase SQL Editor to set up the database
 -- ============================================================
 

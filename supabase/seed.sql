@@ -1,5 +1,5 @@
 -- ============================================================
--- TrialFlow AI — Seed Data
+-- VitalAI AI — Seed Data
 -- Run after schema.sql
 -- ============================================================
 
@@ -15,6 +15,6 @@ INSERT INTO roles (name, description) VALUES
 -- These are placeholder inserts for reference:
 
 -- INSERT INTO users (email, password_hash, full_name, role_id) VALUES
---     ('admin@trialflow.ai', '$2b$12$PLACEHOLDER', 'Admin TrialFlow', 1),
---     ('coordinator@trialflow.ai', '$2b$12$PLACEHOLDER', 'María Coordinadora', 2),
---     ('doctor@trialflow.ai', '$2b$12$PLACEHOLDER', 'Dr. Investigador', 3);
+--     ('admin@vitalai.com', '$2b$12$PLACEHOLDER', 'Admin VitalAI', 1),
+--     ('coordinator@vitalai.com', '$2b$12$PLACEHOLDER', 'María Coordinadora', 2),
+--     ('doctor@vitalai.com', '$2b$12$PLACEHOLDER', 'Dr. Investigador', 3);

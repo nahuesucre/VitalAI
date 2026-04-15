@@ -7,7 +7,7 @@ const translations: Record<string, Record<Locale, string>> = {
   "nav.screening": { es: "Screening", en: "Screening" },
   "nav.visits": { es: "Visitas", en: "Visits" },
   "nav.patients": { es: "Pacientes", en: "Patients" },
-  "nav.copilot": { es: "VitalIA", en: "VitalIA" },
+  "nav.copilot": { es: "VitalAI", en: "VitalAI" },
   "nav.logout": { es: "Cerrar sesión", en: "Log out" },
   "nav.collapse": { es: "Colapsar menú", en: "Collapse menu" },
   "nav.expand": { es: "Expandir menú", en: "Expand menu" },
@@ -215,9 +215,9 @@ const translations: Record<string, Record<Locale, string>> = {
   "visit.nextVisit": { es: "Siguiente visita", en: "Next visit" },
 
   // ─── Chat ───────────────────────────────────────────────────────────────────
-  "chat.title": { es: "VitalIA", en: "VitalIA" },
+  "chat.title": { es: "VitalAI", en: "VitalAI" },
   "chat.subtitle": { es: "Consultá sobre el protocolo, pacientes y visitas", en: "Ask about the protocol, patients, and visits" },
-  "chat.welcome1": { es: "Hola, soy VitalIA.", en: "Hi, I'm VitalIA." },
+  "chat.welcome1": { es: "Hola, soy VitalAI.", en: "Hi, I'm VitalAI." },
   "chat.welcome2": { es: "Puedo ayudarte con consultas sobre el protocolo, estado de pacientes, visitas y procedimientos.", en: "I can help you with questions about the protocol, patient status, visits, and procedures." },
   "chat.suggestion1": { es: "¿Qué ventana de tiempo tengo para esta visita?", en: "What time window do I have for this visit?" },
   "chat.suggestion2": { es: "¿Qué procedimientos incluye la Visita 1?", en: "What procedures does Visit 1 include?" },

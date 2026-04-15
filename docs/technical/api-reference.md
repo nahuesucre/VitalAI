@@ -15,7 +15,7 @@ Login with email and password.
 **Request:**
 ```json
 {
-  "email": "coordinator@trialflow.ai",
+  "email": "coordinator@vitalai.com",
   "password": "password123"
 }
 ```
@@ -52,7 +52,7 @@ Get the current authenticated user's profile.
 ```json
 {
   "id": "uuid",
-  "email": "coordinator@trialflow.ai",
+  "email": "coordinator@vitalai.com",
   "full_name": "Coordinator Demo",
   "role_id": 2,
   "role_name": "coordinator",
@@ -409,6 +409,6 @@ Send a message to the AI copilot.
 ```json
 {
   "status": "ok",
-  "service": "trialflow-ai"
+  "service": "vitalai"
 }
 ```
