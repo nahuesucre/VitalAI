@@ -12,9 +12,9 @@ Navigate to `http://localhost:3000` and enter your credentials.
 
 | Email | Password | Role |
 |-------|----------|------|
-| admin@trialflow.ai | password123 | Admin |
-| coordinator@trialflow.ai | password123 | Coordinator |
-| doctor@trialflow.ai | password123 | Physician |
+| admin@vitalai.ai | password123 | Admin |
+| coordinator@vitalai.ai | password123 | Coordinator |
+| doctor@vitalai.ai | password123 | Physician |
 
 After login, you'll land on the **Dashboard**.
 

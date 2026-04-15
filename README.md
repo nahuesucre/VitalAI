@@ -208,9 +208,9 @@ Open `http://localhost:3000`
 
 | Email | Password | Role |
 |-------|----------|------|
-| admin@trialflow.ai | password123 | Admin |
-| coordinator@trialflow.ai | password123 | Coordinator |
-| doctor@trialflow.ai | password123 | Physician |
+| admin@vitalai.ai | password123 | Admin |
+| coordinator@vitalai.ai | password123 | Coordinator |
+| doctor@vitalai.ai | password123 | Physician |
 
 ---
 
@@ -271,54 +271,79 @@ VitalAI/
 - `POST /api/v1/studies/` — Create study
 - `GET /api/v1/studies/` — List studies
 - `GET /api/v1/studies/{id}` — Study details
+- `PUT /api/v1/studies/{id}` — Update study
+- `DELETE /api/v1/studies/{id}` — Delete study (cascades to all related data)
 - `POST /api/v1/studies/{id}/documents` — Upload document (protocol/ICF/IB)
+- `DELETE /api/v1/studies/{id}/documents/{doc_id}` — Delete document
 - `POST /api/v1/studies/{id}/documents/{doc_id}/parse` — Trigger AI parsing
 
 ### Study Structure
 - `GET /api/v1/studies/{id}/structure/visits` — Extracted visits & procedures
+- `PUT /api/v1/studies/{id}/structure/visits/{visit_id}` — Update visit
+- `DELETE /api/v1/studies/{id}/structure/visits/{visit_id}` — Delete visit
 - `GET /api/v1/studies/{id}/structure/rules` — Inclusion/exclusion criteria
-- `POST /api/v1/studies/{id}/structure/confirm` — Confirm structure
+- `PUT /api/v1/studies/{id}/structure/rules/{rule_id}` — Update rule
+- `POST /api/v1/studies/{id}/structure/confirm` — Confirm structure & activate study
 
 ### Patients
-- `POST /api/v1/studies/{id}/patients/` — Create patient
+- `POST /api/v1/studies/{id}/patients/` — Create patient (auto-initializes screening)
 - `GET /api/v1/studies/{id}/patients/` — List patients
+- `GET /api/v1/studies/{id}/patients/{patient_id}` — Patient details
 
 ### Screening & Visits
 - `GET /api/v1/patients/{id}/screening/` — Screening criteria status
-- `PUT /api/v1/patients/{id}/screening/{item_id}` — Update criterion
-- `POST /api/v1/patients/{id}/visits/` — Create visit
-- `PUT /api/v1/patients/{id}/visits/{id}/tasks/{id}` — Update task status
+- `PUT /api/v1/patients/{id}/screening/{item_id}` — Update criterion (auto-recalculates eligibility)
+- `POST /api/v1/patients/{id}/visits/` — Create visit (enforces sequential order, auto-creates tasks)
+- `GET /api/v1/patients/{id}/visits/` — List visits
+- `GET /api/v1/patients/{id}/visits/{id}` — Visit with tasks
+- `PUT /api/v1/patients/{id}/visits/{id}/tasks/{id}` — Update task status (auto-resolves alerts)
+- `DELETE /api/v1/patients/{id}/visits/{id}` — Delete visit
+- `POST /api/v1/patients/{id}/visits/{id}/check-alerts` — Run alert engine
 
 ### Alerts & Metrics
-- `GET /api/v1/studies/{id}/alerts/` — List alerts
+- `GET /api/v1/studies/{id}/alerts/` — List alerts (filterable by patient, type, severity, status)
+- `PUT /api/v1/studies/{id}/alerts/{id}` — Update alert status
 - `GET /api/v1/studies/{id}/metrics/overview` — Dashboard metrics
 
 ### Chat
-- `POST /api/v1/chat/` — AI copilot (context-aware)
+- `POST /api/v1/chat/` — AI copilot (context-aware: study, documents, patients, visits, alerts)
 
 ---
 
 ## MVP Scope
 
 ### Included
-- Study creation and document management
-- AI-powered document parsing with smart section detection
-- Patient management with pseudonymization
-- Screening with dynamic checklists (inclusion/exclusion)
-- Visit execution with guided procedures
-- Alert system for deviations and missing items
-- Contextual AI chat (grounded in documents + operational data)
-- Operational metrics dashboard
-- Role-based access (admin, coordinator, physician)
+- Study creation and document management (full CRUD with cascade delete)
+- AI-powered document parsing with smart section detection (protocol, ICF, IB)
+- Patient management with pseudonymization (auto-initialized screening)
+- Screening with dynamic checklists (inclusion/exclusion, auto-eligibility calculation)
+- Visit execution with guided procedures (sequential enforcement, task management)
+- Alert system for deviations and missing items (rule-based engine, auto-resolution)
+- Contextual AI chat grounded in study documents, structure, and patient data
+- Operational metrics dashboard (patients, visits, alerts, missing procedures)
+- JWT authentication with role system (admin, coordinator, physician)
+- Dark mode and bilingual UI (English / Spanish)
+- Global views: patients, screening, and visits across all studies
+- Confirmation modals for destructive actions
+
+### Not yet implemented
+- Role-based access control (roles exist but no endpoint-level permission enforcement)
+- Audit log queries (table exists, not populated or exposed via API)
+- Notes CRUD (table exists, no endpoints)
+- Patient update/delete endpoints
+- Database migrations (Alembic not configured; tables created on startup)
+- Dedicated metrics/analytics page with charts
+- Document preview and version comparison
+- Real-time updates (WebSocket)
 
 ### Future Roadmap
 - Randomization
 - Patient portal
 - WhatsApp integration
 - EHR/laboratory integrations
-- Document version comparison
 - Ethics committee portal
 - On-premise deployment with local LLM
+- Advanced analytics and reporting
 
 ---
 
